@@ -1,17 +1,16 @@
 import { Plus, Mic, ArrowUp, Paperclip, ChevronDown, CheckCircle2, Image as ImageIcon, Map, LayoutGrid, Link as LinkIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { InfinityParticles } from "./InfinityParticles";
 
 export function MainWorkspace() {
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-8 relative">
-      <div className="max-w-3xl w-full flex flex-col items-center gap-6">
+      <div className="max-w-3xl w-full flex flex-col items-center gap-4">
         
-        {/* Helper graphic top */}
-        <div className="w-14 h-14 rounded-full border-[1.5px] border-zinc-700/60 border-dotted flex items-center justify-center text-zinc-400 mb-2 shadow-sm">
-          <Plus className="w-5 h-5 opacity-60" />
-        </div>
+        {/* Animated Premium Infinity Particles */}
+        <InfinityParticles />
 
-        <h1 className="text-[28px] font-medium tracking-tight text-zinc-100 mb-2">What should we work on?</h1>
+        <h1 className="text-[28px] font-medium tracking-tight text-zinc-100 mb-2 mt-2">What should we work on?</h1>
 
         {/* Input box */}
         <div className="w-full bg-[#18181A] border border-zinc-800/80 rounded-2xl p-3.5 flex flex-col gap-3 shadow-[0_8px_30px_rgb(0,0,0,0.2)]">
