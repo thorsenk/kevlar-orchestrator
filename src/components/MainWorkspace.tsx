@@ -1,10 +1,35 @@
+import { useState } from "react";
 import { Plus, Mic, ArrowUp, Paperclip, ChevronDown, CheckCircle2, Image as ImageIcon, Map, LayoutGrid, Link as LinkIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InfinityParticles } from "./InfinityParticles";
+import { KanbanBoard } from "./KanbanBoard";
+import { TaskDetailModal } from "./TaskDetailModal";
+import { AgentTask } from "@/types/task";
+import type { ViewState } from "./AppShell";
 
-export function MainWorkspace() {
+interface MainWorkspaceProps {
+  currentView: ViewState;
+}
+
+export function MainWorkspace({ currentView }: MainWorkspaceProps) {
+  const [selectedTask, setSelectedTask] = useState<AgentTask | null>(null);
+
+  if (currentView === 'board') {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden h-full">
+        <KanbanBoard onTaskClick={(task) => setSelectedTask(task)} />
+        {selectedTask && (
+          <TaskDetailModal
+            task={selectedTask}
+            onClose={() => setSelectedTask(null)}
+          />
+        )}
+      </div>
+    );
+  }
+
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-8 relative">
+    <div className="flex-1 flex flex-col items-center justify-center p-8 relative h-full">
       <div className="max-w-3xl w-full flex flex-col items-center gap-4">
         
         {/* Animated Premium Infinity Particles */}

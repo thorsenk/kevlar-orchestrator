@@ -7,13 +7,20 @@ import {
   Plus, 
   ChevronDown,
   SquarePen,
-  Filter
+  Filter,
+  LayoutDashboard
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
+import type { ViewState } from "./AppShell";
 
-export function SidebarLeft() {
+interface SidebarLeftProps {
+  currentView: ViewState;
+  setCurrentView: (view: ViewState) => void;
+}
+
+export function SidebarLeft({ currentView, setCurrentView }: SidebarLeftProps) {
   return (
     <div className="flex flex-col h-full text-zinc-300">
       <div className="p-4 flex items-center justify-between">
@@ -27,7 +34,11 @@ export function SidebarLeft() {
       </div>
 
       <div className="px-3 pb-2 pt-1 flex flex-col gap-1 mt-1">
-        <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-3 text-zinc-300 bg-transparent border border-zinc-700/50 hover:bg-zinc-800/50">
+        <Button
+          variant="ghost"
+          onClick={() => setCurrentView('chat')}
+          className={`w-full justify-start gap-2 h-9 px-3 text-zinc-300 bg-transparent border ${currentView === 'chat' ? 'border-zinc-500/50 bg-zinc-800/50' : 'border-zinc-700/50 hover:bg-zinc-800/50'}`}
+        >
           <SquarePen className="w-4 h-4 text-zinc-400" />
           <span className="font-medium text-sm">New chat</span>
         </Button>
@@ -42,6 +53,12 @@ export function SidebarLeft() {
           />
         </div>
         
+        <NavItem
+          icon={<LayoutDashboard className="w-4 h-4 text-zinc-400" />}
+          label="Agent Board"
+          active={currentView === 'board'}
+          onClick={() => setCurrentView('board')}
+        />
         <NavItem icon={<Blocks className="w-4 h-4 text-zinc-400" />} label="Plugins" />
         <NavItem icon={<Zap className="w-4 h-4 text-zinc-400" />} label="Automations" />
       </div>
@@ -92,12 +109,16 @@ export function SidebarLeft() {
   );
 }
 
-function NavItem({ icon, label }: { icon: React.ReactNode, label: string }) {
+function NavItem({ icon, label, active, onClick }: { icon: React.ReactNode, label: string, active?: boolean, onClick?: () => void }) {
   return (
-    <Button variant="ghost" className="w-full justify-start gap-2 h-8 px-2 text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50 transition-none font-normal text-sm">
+    <Button
+      variant="ghost"
+      onClick={onClick}
+      className={`w-full justify-start gap-2 h-8 px-2 text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50 transition-none font-normal text-sm ${active ? 'bg-zinc-800/50 text-zinc-100' : ''}`}
+    >
       {icon}
       <span>{label}</span>
-      </Button>
+    </Button>
   );
 }
 
