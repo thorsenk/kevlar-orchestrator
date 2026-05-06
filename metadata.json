@@ -1,0 +1,6 @@
+{
+  "name": "Side-Car Agent Orchestration",
+  "description": "Desktop-styled agent orchestration web app with a side-car interface for assisting in team builds.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
