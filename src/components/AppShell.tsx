@@ -1,8 +1,13 @@
+import { useState } from "react";
 import { SidebarLeft } from "./SidebarLeft";
 import { MainWorkspace } from "./MainWorkspace";
 import { SidebarRight } from "./SidebarRight";
 
+export type ViewState = 'chat' | 'board';
+
 export function AppShell() {
+  const [currentView, setCurrentView] = useState<ViewState>('chat');
+
   return (
     <div className="h-screen w-full bg-[#0F0F11] font-sans overflow-hidden text-foreground relative z-0 flex">
       {/* Ambient background for the entire scene. Extends under the right panel. */}
@@ -14,12 +19,12 @@ export function AppShell() {
       </div>
 
       <div className="w-[260px] flex-shrink-0 bg-[#161618] flex flex-col border-r border-white/[0.04] z-20 relative shadow-[4px_0_24px_rgba(0,0,0,0.4)]">
-        <SidebarLeft />
+        <SidebarLeft currentView={currentView} setCurrentView={setCurrentView} />
       </div>
 
       {/* Main Workspace: background is transparent so the ambient blur hits the right panel. Content is padded relative to absolute sidebar. */}
       <div className="flex-1 flex flex-col min-w-0 bg-transparent relative z-10 pr-[340px]">
-        <MainWorkspace />
+        <MainWorkspace currentView={currentView} />
       </div>
 
       {/* True Spatial Glass Right Panel (VisionOS Volumetric Material) */}

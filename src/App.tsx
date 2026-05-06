@@ -10,7 +10,7 @@ import { AppShell } from "./components/AppShell";
 export default function App() {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="app-ui-theme">
-      <TooltipProvider delayDuration={0}>
+      <TooltipProvider delay={0}>
         <AppShell />
       </TooltipProvider>
     </ThemeProvider>
