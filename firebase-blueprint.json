@@ -1,0 +1,98 @@
+{
+  "entities": {
+    "project": {
+      "title": "Project",
+      "description": "A project entity that tasks and chats belong to",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "name": { "type": "string" },
+        "time": { "type": "string" },
+        "isSub": { "type": "boolean" },
+        "createdAt": { "type": "timestamp" },
+        "updatedAt": { "type": "timestamp" }
+      },
+      "required": ["ownerId", "name", "createdAt", "updatedAt"]
+    },
+    "chat": {
+      "title": "Chat",
+      "description": "A chat session",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "name": { "type": "string" },
+        "projectId": { "type": "string" },
+        "createdAt": { "type": "timestamp" },
+        "updatedAt": { "type": "timestamp" }
+      },
+      "required": ["ownerId", "name", "createdAt", "updatedAt"]
+    },
+    "message": {
+      "title": "Message",
+      "description": "A message in a chat session",
+      "type": "object",
+      "properties": {
+        "role": { "type": "string", "enum": ["user", "assistant"] },
+        "content": { "type": "string" },
+        "createdAt": { "type": "timestamp" }
+      },
+      "required": ["role", "content", "createdAt"]
+    },
+    "task": {
+      "title": "Task",
+      "description": "An agent task",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "title": { "type": "string" },
+        "projectTag": { "type": "string" },
+        "status": { "type": "string", "enum": ["Idle", "Processing", "Awaiting User", "Completed"] },
+        "creatorType": { "type": "string", "enum": ["User", "Agent"] },
+        "assignedAgent": { "type": "string" },
+        "payloadType": { "type": "string", "enum": ["markdown", "diff", "none"] },
+        "metadata": { "type": "object" },
+        "payload": { "type": "object" },
+        "createdAt": { "type": "timestamp" },
+        "updatedAt": { "type": "timestamp" }
+      },
+      "required": ["ownerId", "title", "projectTag", "status", "creatorType", "payloadType", "createdAt", "updatedAt"]
+    },
+    "team": {
+      "title": "Team",
+      "description": "A team of agents",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "members": { "type": "array" },
+        "roles": { "type": "array" },
+        "createdAt": { "type": "timestamp" },
+        "updatedAt": { "type": "timestamp" }
+      },
+      "required": ["ownerId", "name", "description", "members", "roles", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "projects/{projectId}": {
+      "schema": { "$ref": "#/entities/project" },
+      "description": "Projects collection containing user workspaces"
+    },
+    "chats/{chatId}": {
+      "schema": { "$ref": "#/entities/chat" },
+      "description": "Chats collection containing agent conversations"
+    },
+    "chats/{chatId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/message" },
+      "description": "Messages belonging to a chat"
+    },
+    "tasks/{taskId}": {
+      "schema": { "$ref": "#/entities/task" },
+      "description": "Active and completed tasks"
+    },
+    "teams/{teamId}": {
+      "schema": { "$ref": "#/entities/team" },
+      "description": "Teams of AI agents"
+    }
+  }
+}

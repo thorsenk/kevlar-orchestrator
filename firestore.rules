@@ -1,0 +1,109 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) { 
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isSignedIn() { return request.auth != null; }
+
+    function isValidProject(data, isCreate) {
+      return data.keys().hasAll(['ownerId', 'name', 'createdAt', 'updatedAt'])
+        && data.ownerId == request.auth.uid
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && (!('time' in data) || (data.time is string && data.time.size() <= 50))
+        && (!('isSub' in data) || data.isSub is bool)
+        && (isCreate ? data.createdAt == request.time && data.updatedAt == request.time : data.updatedAt == request.time)
+        && (isCreate || (incoming().ownerId == existing().ownerId && incoming().createdAt == existing().createdAt));
+    }
+
+    function isValidChat(data, isCreate) {
+      return data.keys().hasAll(['ownerId', 'name', 'createdAt', 'updatedAt'])
+        && data.ownerId == request.auth.uid
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && (!('projectId' in data) || (data.projectId is string && data.projectId.size() <= 128))
+        && (isCreate ? data.createdAt == request.time && data.updatedAt == request.time : data.updatedAt == request.time)
+        && (isCreate || (incoming().ownerId == existing().ownerId && incoming().createdAt == existing().createdAt));
+    }
+
+    function isValidMessage(data, isCreate) {
+      return data.keys().hasAll(['role', 'content', 'createdAt'])
+        && data.role in ['user', 'assistant']
+        && data.content is string && data.content.size() <= 10000
+        && data.createdAt == request.time;
+    }
+
+    function isValidTask(data, isCreate) {
+      return data.keys().hasAll(['ownerId', 'title', 'projectTag', 'status', 'creatorType', 'payloadType', 'createdAt', 'updatedAt'])
+        && data.ownerId == request.auth.uid
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 200
+        && data.projectTag is string && data.projectTag.size() <= 50
+        && data.status in ['Idle', 'Processing', 'Awaiting User', 'Completed']
+        && data.creatorType in ['User', 'Agent']
+        && data.payloadType in ['markdown', 'diff', 'none']
+        && (!('assignedAgent' in data) || (data.assignedAgent is string && data.assignedAgent.size() <= 100))
+        && (!('metadata' in data) || data.metadata is map)
+        && (!('payload' in data) || data.payload is map)
+        && (isCreate ? data.createdAt == request.time && data.updatedAt == request.time : data.updatedAt == request.time)
+        && (isCreate || (incoming().ownerId == existing().ownerId && incoming().createdAt == existing().createdAt));
+    }
+
+    function isValidTeam(data, isCreate) {
+      return data.keys().hasAll(['ownerId', 'name', 'description', 'members', 'roles', 'createdAt', 'updatedAt'])
+        && data.ownerId == request.auth.uid
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && data.description is string && data.description.size() <= 1000
+        && data.members is list && data.members.size() <= 50
+        && data.roles is list && data.roles.size() <= 30
+        && (isCreate ? data.createdAt == request.time && data.updatedAt == request.time : data.updatedAt == request.time)
+        && (isCreate || (incoming().ownerId == existing().ownerId && incoming().createdAt == existing().createdAt));
+    }
+
+    match /projects/{projectId} {
+      allow get: if isSignedIn() && existing().ownerId == request.auth.uid && isValidId(projectId);
+      allow list: if isSignedIn() && existing().ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(projectId) && isValidProject(incoming(), true);
+      allow update: if isSignedIn() && isValidId(projectId) && isValidProject(incoming(), false) && existing().ownerId == request.auth.uid;
+      allow delete: if isSignedIn() && existing().ownerId == request.auth.uid && isValidId(projectId);
+    }
+
+    match /chats/{chatId} {
+      allow get: if isSignedIn() && existing().ownerId == request.auth.uid && isValidId(chatId);
+      allow list: if isSignedIn() && existing().ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(chatId) && isValidChat(incoming(), true);
+      allow update: if isSignedIn() && isValidId(chatId) && isValidChat(incoming(), false) && existing().ownerId == request.auth.uid;
+      allow delete: if isSignedIn() && existing().ownerId == request.auth.uid && isValidId(chatId);
+
+      match /messages/{messageId} {
+        function isChatOwner() {
+          return get(/databases/$(database)/documents/chats/$(chatId)).data.ownerId == request.auth.uid;
+        }
+
+        allow get: if isSignedIn() && isValidId(chatId) && isValidId(messageId) && isChatOwner();
+        allow list: if isSignedIn() && isValidId(chatId) && isChatOwner();
+        allow create: if isSignedIn() && isValidId(chatId) && isValidId(messageId) && isChatOwner() && isValidMessage(incoming(), true);
+      }
+    }
+
+    match /tasks/{taskId} {
+      allow get: if isSignedIn() && existing().ownerId == request.auth.uid && isValidId(taskId);
+      allow list: if isSignedIn() && existing().ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(taskId) && isValidTask(incoming(), true);
+      allow update: if isSignedIn() && isValidId(taskId) && isValidTask(incoming(), false) && existing().ownerId == request.auth.uid;
+      allow delete: if isSignedIn() && existing().ownerId == request.auth.uid && isValidId(taskId);
+    }
+
+    match /teams/{teamId} {
+      allow get: if isSignedIn() && existing().ownerId == request.auth.uid && isValidId(teamId);
+      allow list: if isSignedIn() && existing().ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(teamId) && isValidTeam(incoming(), true);
+      allow update: if isSignedIn() && isValidId(teamId) && isValidTeam(incoming(), false) && existing().ownerId == request.auth.uid;
+      allow delete: if isSignedIn() && existing().ownerId == request.auth.uid && isValidId(teamId);
+    }
+  }
+}

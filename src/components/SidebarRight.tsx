@@ -1,3 +1,4 @@
+import React from "react";
 import { 
   Settings2, 
   Video, 
@@ -24,7 +25,54 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
-export function SidebarRight() {
+import { sendMessage, createChat } from "@/lib/mutations";
+import type { ViewState } from "./AppShell";
+
+export function SidebarRight({ 
+  activeChatId, 
+  setActiveChatId, 
+  setCurrentView 
+}: { 
+  activeChatId: string | null; 
+  setActiveChatId: (id: string | null) => void;
+  setCurrentView: (view: ViewState) => void;
+}) {
+  const [activePrimaryTab, setActivePrimaryTab] = React.useState('Capture');
+  const [activeSubTab, setActiveSubTab] = React.useState('Meeting Notes');
+  const [isSending, setIsSending] = React.useState(false);
+
+  const handleSendToPrimary = async () => {
+    try {
+      setIsSending(true);
+      let targetChatId = activeChatId;
+      if (!targetChatId) {
+        const newChatId = await createChat("Meeting context");
+        if (newChatId) {
+          targetChatId = newChatId;
+          setActiveChatId(newChatId);
+        } else {
+          return;
+        }
+      }
+      
+      setCurrentView('chat');
+      
+      const payload = `=== Hand-off from Side-Car ===\nTab: ${activeSubTab}\nPayload sent from isolated side-car container.`;
+      
+      await sendMessage(targetChatId, payload, 'user');
+      setTimeout(async () => {
+        if (targetChatId) {
+          await sendMessage(targetChatId, `I received the side-car data for ${activeSubTab}. How would you like to process this context?`, 'assistant');
+        }
+      }, 1000);
+
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-transparent text-white/80">
       {/* Header */}
@@ -55,27 +103,33 @@ export function SidebarRight() {
 
         {/* Primary Tabs */}
         <div className="grid grid-cols-4 gap-2 bg-black/20 p-1.5 rounded-2xl shadow-[inset_0_1px_6px_rgba(0,0,0,0.5),0_1px_0_rgba(255,255,255,0.03)] border border-white/[0.02]">
-          <TabButton icon={<Video className="w-4 h-4" />} label="Capture" active />
-          <TabButton icon={<FileText className="w-4 h-4" />} label="Review" />
-          <TabButton icon={<Wand2 className="w-4 h-4" />} label="Assist" />
-          <TabButton icon={<BarChart2 className="w-4 h-4" />} label="Visualize" />
+          <TabButton icon={<Video className="w-4 h-4" />} label="Capture" active={activePrimaryTab === 'Capture'} onClick={() => setActivePrimaryTab('Capture')} />
+          <TabButton icon={<FileText className="w-4 h-4" />} label="Review" active={activePrimaryTab === 'Review'} onClick={() => setActivePrimaryTab('Review')} />
+          <TabButton icon={<Wand2 className="w-4 h-4" />} label="Assist" active={activePrimaryTab === 'Assist'} onClick={() => setActivePrimaryTab('Assist')} />
+          <TabButton icon={<BarChart2 className="w-4 h-4" />} label="Visualize" active={activePrimaryTab === 'Visualize'} onClick={() => setActivePrimaryTab('Visualize')} />
         </div>
 
         {/* Sub Navigation */}
         <div className="flex justify-between px-2 pt-1 text-[13px] font-medium border-b border-black/40 shadow-[0_1px_0_rgba(255,255,255,0.03)] relative">
-          <div className="pb-2.5 cursor-pointer text-white/90 relative mix-blend-plus-lighter">
+          <div onClick={() => setActiveSubTab('Meeting Notes')} className={`pb-2.5 cursor-pointer relative mix-blend-plus-lighter transition-colors ${activeSubTab === 'Meeting Notes' ? 'text-white/90' : 'text-white/40 hover:text-white/70'}`}>
             Meeting Notes
-            <div className="absolute -bottom-[1px] left-0 right-0 h-[2px] bg-white/40 rounded-t-full shadow-[0_0_8px_rgba(255,255,255,0.5)]" />
+            {activeSubTab === 'Meeting Notes' && <div className="absolute -bottom-[1px] left-0 right-0 h-[2px] bg-white/40 rounded-t-full shadow-[0_0_8px_rgba(255,255,255,0.5)]" />}
           </div>
-          <div className="pb-2.5 cursor-pointer text-white/40 hover:text-white/70 transition-colors mix-blend-plus-lighter">Decisions</div>
-          <div className="pb-2.5 cursor-pointer text-white/40 hover:text-white/70 transition-colors mix-blend-plus-lighter">Timeline</div>
+          <div onClick={() => setActiveSubTab('Decisions')} className={`pb-2.5 cursor-pointer relative mix-blend-plus-lighter transition-colors ${activeSubTab === 'Decisions' ? 'text-white/90' : 'text-white/40 hover:text-white/70'}`}>
+            Decisions
+            {activeSubTab === 'Decisions' && <div className="absolute -bottom-[1px] left-0 right-0 h-[2px] bg-white/40 rounded-t-full shadow-[0_0_8px_rgba(255,255,255,0.5)]" />}
+          </div>
+          <div onClick={() => setActiveSubTab('Timeline')} className={`pb-2.5 cursor-pointer relative mix-blend-plus-lighter transition-colors ${activeSubTab === 'Timeline' ? 'text-white/90' : 'text-white/40 hover:text-white/70'}`}>
+            Timeline
+            {activeSubTab === 'Timeline' && <div className="absolute -bottom-[1px] left-0 right-0 h-[2px] bg-white/40 rounded-t-full shadow-[0_0_8px_rgba(255,255,255,0.5)]" />}
+          </div>
         </div>
       </div>
 
       {/* Stream Area */}
       <ScrollArea className="flex-1 p-4">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-white/90 mix-blend-plus-lighter">Meeting Notes</h3>
+          <h3 className="font-semibold text-white/90 mix-blend-plus-lighter">{activeSubTab}</h3>
           <div className="flex items-center gap-1.5 opacity-80 mix-blend-plus-lighter">
              <div className="w-1.5 h-1.5 rounded-full bg-white/60 shadow-[0_0_8px_rgba(255,255,255,0.8)] animate-pulse" />
             <span className="text-[10px] font-medium text-white/60 uppercase tracking-widest">Live</span>
@@ -103,45 +157,72 @@ export function SidebarRight() {
         </div>
 
         <div className="flex flex-col gap-3">
-          <StreamCard 
-            icon={<FileText className="w-3.5 h-3.5 text-white" />}
-            title="Summary"
-            items={[
-              "Reviewed Q2 roadmap and priorities",
-              "Discussed user feedback on onboarding",
-              "Aligned on resourcing for analytics work"
-            ]}
-          />
-          
-          <StreamCard 
-            icon={<CheckCircle2 className="w-3.5 h-3.5 text-white" />}
-            title="Decisions"
-            items={[
-              "Ship improvements to onboarding flow",
-              "Prioritize analytics dashboard MVP",
-              "Defer legacy data migration"
-            ]}
-          />
-          
-          <StreamCard 
-            icon={<HelpCircle className="w-3.5 h-3.5 text-white" />}
-            title="Open Questions"
-            items={[
-              "What's the scope for SSO integration?",
-              "Do we need a dedicated PM for analytics?"
-            ]}
-          />
-          
-          <StreamCard 
-            icon={<Rocket className="w-3.5 h-3.5 text-white" />}
-            title="Next Steps"
-            items={[
-              "[ ] Share onboarding designs by Fri",
-              "[ ] Draft analytics MVP spec",
-              "[ ] Sync with infra on data pipeline"
-            ]}
-            isTasks
-          />
+          {activeSubTab === 'Meeting Notes' && (
+            <>
+              <StreamCard 
+                icon={<FileText className="w-3.5 h-3.5 text-white" />}
+                title="Summary"
+                items={[
+                  "Reviewed Q2 roadmap and priorities",
+                  "Discussed user feedback on onboarding",
+                  "Aligned on resourcing for analytics work"
+                ]}
+              />
+              <StreamCard 
+                icon={<HelpCircle className="w-3.5 h-3.5 text-white" />}
+                title="Open Questions"
+                items={[
+                  "What's the scope for SSO integration?",
+                  "Do we need a dedicated PM for analytics?"
+                ]}
+              />
+            </>
+          )}
+
+          {activeSubTab === 'Decisions' && (
+            <>
+              <StreamCard 
+                icon={<CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+                title="Decisions"
+                items={[
+                  "Ship improvements to onboarding flow",
+                  "Prioritize analytics dashboard MVP",
+                  "Defer legacy data migration"
+                ]}
+              />
+              <StreamCard 
+                icon={<Rocket className="w-3.5 h-3.5 text-white" />}
+                title="Next Steps"
+                items={[
+                  "[ ] Share onboarding designs by Fri",
+                  "[ ] Draft analytics MVP spec",
+                  "[ ] Sync with infra on data pipeline"
+                ]}
+                isTasks
+              />
+            </>
+          )}
+
+          {activeSubTab === 'Timeline' && (
+            <>
+              <StreamCard 
+                icon={<FileText className="w-3.5 h-3.5 text-white" />}
+                title="10:05 AM"
+                items={[
+                  "Meeting started",
+                  "Everyone joined the call"
+                ]}
+              />
+              <StreamCard 
+                icon={<FileText className="w-3.5 h-3.5 text-white" />}
+                title="10:15 AM"
+                items={[
+                  "Discussed Q2 roadmap",
+                  "Agreed on onboarding priorities"
+                ]}
+              />
+            </>
+          )}
         </div>
       </ScrollArea>
 
@@ -152,9 +233,13 @@ export function SidebarRight() {
             <Lock className="w-4 h-4 mr-2" />
             Keep Isolated
           </Button>
-          <Button className="flex-1 bg-white/[0.08] hover:bg-white/[0.12] text-white border border-white/[0.12] shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_4px_12px_rgba(0,0,0,0.2)] font-medium h-10 rounded-xl transition-all duration-300 mix-blend-plus-lighter">
+          <Button 
+            onClick={handleSendToPrimary}
+            disabled={isSending}
+            className="flex-1 bg-white/[0.08] hover:bg-white/[0.12] text-white border border-white/[0.12] shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_4px_12px_rgba(0,0,0,0.2)] font-medium h-10 rounded-xl transition-all duration-300 mix-blend-plus-lighter"
+          >
             <Share className="w-4 h-4 mr-2" />
-            Send to Primary
+            {isSending ? "Sending..." : "Send to Primary"}
           </Button>
         </div>
         <p className="text-[11px] text-white/40 text-center tracking-wide mix-blend-plus-lighter">
@@ -165,9 +250,9 @@ export function SidebarRight() {
   );
 }
 
-function TabButton({ icon, label, active }: { icon: React.ReactNode, label: string, active?: boolean }) {
+function TabButton({ icon, label, active, onClick }: { icon: React.ReactNode, label: string, active?: boolean, onClick?: () => void }) {
   return (
-    <div className={`flex flex-col items-center justify-center py-2.5 flex-1 rounded-xl cursor-pointer transition-all duration-300 relative overflow-hidden mix-blend-plus-lighter ${active ? 'bg-white/[0.12] shadow-[0_2px_8px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.1)] text-white' : 'text-white/50 bg-transparent hover:text-white/80 hover:bg-white/[0.04]'}`}>
+    <div onClick={onClick} className={`flex flex-col items-center justify-center py-2.5 flex-1 rounded-xl cursor-pointer transition-all duration-300 relative overflow-hidden mix-blend-plus-lighter ${active ? 'bg-white/[0.12] shadow-[0_2px_8px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.1)] text-white' : 'text-white/50 bg-transparent hover:text-white/80 hover:bg-white/[0.04]'}`}>
       <div className={`mb-1.5 ${active ? 'opacity-100' : 'opacity-80'}`}>{icon}</div>
       <span className="text-[11px] font-medium leading-none tracking-wide">{label}</span>
       </div>

@@ -1,12 +1,21 @@
 import { AgentTask } from '@/types/task';
 import { Bot, User, CircleDashed } from 'lucide-react';
 import React from 'react';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
+import { updateTaskAssignedAgent } from '@/lib/mutations';
 
 export interface TaskCardProps {
   task: AgentTask;
   onClick: (task: AgentTask) => void;
   key?: React.Key;
 }
+
+const AVAILABLE_AGENTS = ["AlphaBot", "BetaAgent", "CodeSmith", "DataMule", "UI Weaver", "UX Wizard"];
 
 export function TaskCard({ task, onClick }: TaskCardProps) {
   return (
@@ -31,20 +40,49 @@ export function TaskCard({ task, onClick }: TaskCardProps) {
           {task.projectTag}
         </span>
 
-        <div className="flex items-center gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity">
-          {task.creatorType === 'User' ? (
-            <div className="w-4 h-4 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center" title="Created by User">
-              <User className="w-2.5 h-2.5 text-zinc-400" />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <div 
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-white/10"
+            >
+              {!task.assignedAgent ? (
+                <div className="w-4 h-4 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center" title="Unassigned">
+                  <User className="w-2.5 h-2.5 text-zinc-400" />
+                </div>
+              ) : (
+                <div className="w-4 h-4 rounded-full bg-purple-900/40 border border-purple-500/30 flex items-center justify-center" title={`Assigned to ${task.assignedAgent}`}>
+                  <Bot className="w-2.5 h-2.5 text-purple-400" />
+                </div>
+              )}
+              <span className="text-[10px] text-zinc-500 truncate max-w-[80px]">
+                {task.assignedAgent || 'Unassigned'}
+              </span>
             </div>
-          ) : (
-            <div className="w-4 h-4 rounded-full bg-purple-900/40 border border-purple-500/30 flex items-center justify-center" title={`Assigned to ${task.assignedAgent}`}>
-              <Bot className="w-2.5 h-2.5 text-purple-400" />
-            </div>
-          )}
-          <span className="text-[10px] text-zinc-500 truncate max-w-[80px]">
-            {task.assignedAgent || 'Unassigned'}
-          </span>
-        </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-40">
+            <div className="px-2 py-1.5 text-xs font-semibold text-zinc-400">Assign Agent</div>
+            {AVAILABLE_AGENTS.map((agent) => (
+              <DropdownMenuItem 
+                key={agent} 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  updateTaskAssignedAgent(task.id, agent);
+                }}
+              >
+                {agent}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuItem 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  updateTaskAssignedAgent(task.id, null);
+                }}
+            >
+                <i className="text-zinc-500">Unassign</i>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );

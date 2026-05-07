@@ -3,10 +3,12 @@ import { SidebarLeft } from "./SidebarLeft";
 import { MainWorkspace } from "./MainWorkspace";
 import { SidebarRight } from "./SidebarRight";
 
-export type ViewState = 'chat' | 'board';
+export type ViewState = 'chat' | 'board' | 'teams' | 'plugins' | 'automations';
 
 export function AppShell() {
   const [currentView, setCurrentView] = useState<ViewState>('chat');
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
 
   return (
     <div className="h-screen w-full bg-[#0F0F11] font-sans overflow-hidden text-foreground relative z-0 flex">
@@ -19,12 +21,26 @@ export function AppShell() {
       </div>
 
       <div className="w-[260px] flex-shrink-0 bg-[#161618] flex flex-col border-r border-white/[0.04] z-20 relative shadow-[4px_0_24px_rgba(0,0,0,0.4)]">
-        <SidebarLeft currentView={currentView} setCurrentView={setCurrentView} />
+        <SidebarLeft 
+          currentView={currentView} 
+          setCurrentView={setCurrentView} 
+          activeChatId={activeChatId}
+          setActiveChatId={setActiveChatId}
+          activeProjectId={activeProjectId}
+          setActiveProjectId={setActiveProjectId}
+        />
       </div>
 
       {/* Main Workspace: background is transparent so the ambient blur hits the right panel. Content is padded relative to absolute sidebar. */}
       <div className="flex-1 flex flex-col min-w-0 bg-transparent relative z-10 pr-[340px]">
-        <MainWorkspace currentView={currentView} />
+        <MainWorkspace 
+          currentView={currentView} 
+          setCurrentView={setCurrentView}
+          activeChatId={activeChatId} 
+          setActiveChatId={setActiveChatId}
+          activeProjectId={activeProjectId}
+          setActiveProjectId={setActiveProjectId}
+        />
       </div>
 
       {/* True Spatial Glass Right Panel (VisionOS Volumetric Material) */}
@@ -36,7 +52,11 @@ export function AppShell() {
          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.06] mix-blend-overlay pointer-events-none z-0" />
          
          <div className="relative z-10 flex flex-col w-full h-full">
-            <SidebarRight />
+            <SidebarRight 
+              activeChatId={activeChatId}
+              setActiveChatId={setActiveChatId}
+              setCurrentView={setCurrentView}
+            />
          </div>
       </div>
     </div>

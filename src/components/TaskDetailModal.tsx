@@ -1,6 +1,8 @@
-import { X, Check, FileText, Code2, AlertCircle } from 'lucide-react';
+import { X, Check, FileText, Code2, AlertCircle, Trash2, Edit2, SquarePen } from 'lucide-react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { AgentTask } from '@/types/task';
+import { updateTaskStatus, deleteTask, updateTaskTitle } from '@/lib/mutations';
 
 interface TaskDetailModalProps {
   task: AgentTask;
@@ -8,6 +10,37 @@ interface TaskDetailModalProps {
 }
 
 export function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editTitleValue, setEditTitleValue] = useState(task.title);
+
+  const handleApprove = async () => {
+    await updateTaskStatus(task.id, 'Completed');
+    onClose();
+  };
+
+  const handleReject = async () => {
+    await updateTaskStatus(task.id, 'Idle');
+    onClose();
+  };
+
+  const handleRequestChanges = async () => {
+    await updateTaskStatus(task.id, 'Processing');
+    onClose();
+  };
+
+  const handleDelete = async () => {
+    if (confirm('Are you sure you want to delete this task?')) {
+      await deleteTask(task.id);
+      onClose();
+    }
+  };
+
+  const handleSaveTitle = async () => {
+    if (editTitleValue.trim() && editTitleValue !== task.title) {
+      await updateTaskTitle(task.id, editTitleValue.trim());
+    }
+    setIsEditingTitle(false);
+  };
   return (
     // Absolute positioning to fill ONLY the MainWorkspace canvas
     <div className="absolute inset-0 z-50 flex items-center justify-center p-6 animate-in fade-in duration-200">
@@ -23,17 +56,43 @@ export function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 shrink-0 bg-white/[0.02]">
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-black/40 border border-white/5 text-zinc-400">
-                {task.projectTag}
-              </span>
-              <span className="text-[10px] font-medium text-emerald-400 flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                {task.status}
-              </span>
+          <div className="flex flex-col gap-1 w-full mr-4">
+            <div className="flex items-center justify-between">
+               <div className="flex items-center gap-2">
+                 <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-black/40 border border-white/5 text-zinc-400">
+                   {task.projectTag}
+                 </span>
+                 <span className="text-[10px] font-medium text-emerald-400 flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                   {task.status}
+                 </span>
+               </div>
+               <Button onClick={handleDelete} variant="ghost" size="icon" className="h-6 w-6 text-zinc-500 hover:text-red-400">
+                 <Trash2 className="w-3.5 h-3.5" />
+               </Button>
             </div>
-            <h2 className="text-lg font-medium text-zinc-100">{task.title}</h2>
+            {isEditingTitle ? (
+              <div className="flex items-center gap-2 mt-1">
+                 <input
+                   autoFocus
+                   value={editTitleValue}
+                   onChange={(e) => setEditTitleValue(e.target.value)}
+                   onKeyDown={(e) => {
+                     if (e.key === 'Enter') handleSaveTitle();
+                     if (e.key === 'Escape') { setIsEditingTitle(false); setEditTitleValue(task.title); }
+                   }}
+                   onBlur={handleSaveTitle}
+                   className="flex-1 text-lg font-medium bg-black/40 border border-zinc-700 text-zinc-100 px-2 py-0.5 rounded focus:outline-none min-w-0"
+                 />
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 mt-1 group">
+                 <h2 className="text-lg font-medium text-zinc-100 truncate">{task.title}</h2>
+                 <Button onClick={() => setIsEditingTitle(true)} variant="ghost" size="icon" className="h-5 w-5 opacity-0 group-hover:opacity-100 shrink-0 text-zinc-500 hover:text-zinc-300">
+                   <SquarePen className="w-3.5 h-3.5" />
+                 </Button>
+              </div>
+            )}
           </div>
           <Button
             variant="ghost"
@@ -101,20 +160,20 @@ export function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
             <Button
               variant="ghost"
               className="text-zinc-400 hover:text-white hover:bg-white/5 border border-transparent"
-              onClick={onClose}
+              onClick={handleReject}
             >
               Reject
             </Button>
             <Button
               variant="outline"
               className="bg-white/5 border-white/10 text-zinc-300 hover:bg-white/10 hover:text-white"
-              onClick={onClose}
+              onClick={handleRequestChanges}
             >
               Request Changes
             </Button>
             <Button
               className="bg-emerald-500 hover:bg-emerald-600 text-white border border-emerald-400/20 shadow-[0_2px_10px_rgba(16,185,129,0.2)]"
-              onClick={onClose}
+              onClick={handleApprove}
             >
               <Check className="w-4 h-4 mr-2" />
               Approve & Continue
