@@ -39,6 +39,12 @@ case "$MODE" in
     open_app
     sleep 2
     pgrep -x "$APP_NAME" >/dev/null
+    if command -v sqlite3 >/dev/null 2>&1; then
+      DB_PATH="$HOME/Library/Application Support/$APP_NAME/kevlar-codex.db"
+      if [[ -f "$DB_PATH" ]]; then
+        sqlite3 "$DB_PATH" "SELECT name FROM sqlite_master WHERE type='table' AND name='codex_runs';" | grep -q codex_runs
+      fi
+    fi
     ;;
   *)
     echo "usage: $0 [run|--debug|--logs|--telemetry|--verify]" >&2

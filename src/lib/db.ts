@@ -12,20 +12,34 @@ function useRemoteList<T>(
   const scopeKey = scopes.join('|');
 
   const refresh = useCallback(() => {
-    loader().then(setItems).catch((error) => {
-      console.error(error);
-      setItems([]);
-    });
+    let cancelled = false;
+    loader()
+      .then((nextItems) => {
+        if (!cancelled) setItems(nextItems);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        console.error(error);
+        setItems([]);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [loader]);
 
   useEffect(() => {
-    refresh();
-    return window.kevlar.onAgentEvent((event) => {
+    let cancelRefresh = refresh();
+    const unsubscribe = window.kevlar.onAgentEvent((event) => {
       if (event.type !== 'data_changed') return;
       if (!scopes.includes(event.scope)) return;
       if (chatId && event.chatId && event.chatId !== chatId) return;
-      refresh();
+      cancelRefresh();
+      cancelRefresh = refresh();
     });
+    return () => {
+      cancelRefresh();
+      unsubscribe();
+    };
   }, [chatId, refresh, scopeKey]);
 
   return items;

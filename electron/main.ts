@@ -29,13 +29,21 @@ async function createWindow(): Promise<void> {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false,
+      sandbox: true,
     },
   });
 
   mainWindow.webContents.setWindowOpenHandler(({url}) => {
     void shell.openExternal(url);
     return {action: 'deny'};
+  });
+
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    const currentUrl = mainWindow?.webContents.getURL();
+    if (currentUrl && url !== currentUrl) {
+      event.preventDefault();
+      void shell.openExternal(url);
+    }
   });
 
   mainWindow.on('closed', () => {

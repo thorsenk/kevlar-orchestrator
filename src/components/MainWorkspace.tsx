@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Plus, Mic, ArrowUp, ChevronDown, Image as ImageIcon, Map, LayoutGrid, Link as LinkIcon, Folder, Music, FileImage, Blocks, Zap, SquarePen, Bot, AlertTriangle, Loader2, Square, FolderPlus } from "lucide-react";
+import { Plus, ArrowUp, ChevronDown, Image as ImageIcon, Map, LayoutGrid, Link as LinkIcon, Folder, Blocks, Zap, SquarePen, Bot, AlertTriangle, Loader2, Square, FolderPlus, Terminal, CalendarClock, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
@@ -43,7 +42,7 @@ export function MainWorkspace({ currentView, setCurrentView, activeChatId, setAc
   const runState = useAgentRunState(activeChatId);
   
   const currentChat = activeChatId ? chats.find(c => c.id === activeChatId) : null;
-  const selectedProjectId = currentChat?.projectId ?? activeProjectId ?? null;
+  const selectedProjectId = currentChat ? currentChat.projectId : activeProjectId ?? null;
   const selectedProject = selectedProjectId ? projects.find((project) => project.id === selectedProjectId) : null;
   const runStatus = runState?.status ?? 'idle';
   const runIsActive = runStatus === 'running' || runStatus === 'cancelling';
@@ -120,19 +119,36 @@ export function MainWorkspace({ currentView, setCurrentView, activeChatId, setAc
 
   if (currentView === 'plugins') {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden h-full text-zinc-400">
-        <Blocks className="w-8 h-8 mb-4 opacity-50" />
-        <p>Plugins workspace coming soon.</p>
-      </div>
+      <LocalStatusWorkspace
+        icon={<Blocks className="w-5 h-5" />}
+        title="Codex Runtime"
+        description="Local tools are resolved from this Mac and exposed to the renderer only through preload IPC."
+        items={[
+          {label: 'CLI', value: codexStatus?.cliPath ?? 'Checking'},
+          {label: 'Version', value: codexStatus?.version ?? 'Unknown'},
+          {label: 'Login', value: codexStatus?.loginStatus ?? 'Unknown'},
+          {label: 'Model', value: codexStatus?.defaultModel ?? 'gpt-5.2'},
+          {label: 'Sandbox', value: codexStatus?.defaultSandboxMode ?? 'workspace-write'},
+        ]}
+        notices={[...(codexStatus?.errors ?? []), ...(codexStatus?.warnings ?? [])]}
+      />
     );
   }
 
   if (currentView === 'automations') {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden h-full text-zinc-400">
-        <Zap className="w-8 h-8 mb-4 opacity-50" />
-        <p>Automations workspace coming soon.</p>
-      </div>
+      <LocalStatusWorkspace
+        icon={<Zap className="w-5 h-5" />}
+        title="Local Run Queue"
+        description="This checkpoint supports foreground Codex chat runs and read-only Side-Car passes. Background jobs are intentionally not scheduled in the renderer."
+        items={[
+          {label: 'Active chat', value: activeChatId ?? 'None'},
+          {label: 'Project', value: selectedProject?.name ?? 'None selected'},
+          {label: 'Run state', value: runStatus},
+          {label: 'Storage', value: 'SQLite in Electron userData'},
+        ]}
+        notices={runState?.error ? [runState.error] : []}
+      />
     );
   }
 
@@ -281,15 +297,10 @@ export function MainWorkspace({ currentView, setCurrentView, activeChatId, setAc
                       <Plus className="w-5 h-5" />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-56" align="start">
-                      <DropdownMenuItem>
-                        <FileImage className="w-4 h-4 mr-2" />
-                        Add Image
+                      <DropdownMenuItem onClick={handleCreateProject}>
+                        <FolderPlus className="w-4 h-4 mr-2" />
+                        Add Project Folder
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Music className="w-4 h-4 mr-2" />
-                        Add Audio
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
                       <DropdownMenuSub>
                         <DropdownMenuSubTrigger>
                           <Folder className="w-4 h-4 mr-2" />
@@ -297,11 +308,17 @@ export function MainWorkspace({ currentView, setCurrentView, activeChatId, setAc
                         </DropdownMenuSubTrigger>
                         <DropdownMenuPortal>
                           <DropdownMenuSubContent>
-                            <DropdownMenuItem onClick={() => updateChatProject(activeChatId, "")}>
+                            <DropdownMenuItem onClick={() => {
+                              updateChatProject(activeChatId, "");
+                              setActiveProjectId(null);
+                            }}>
                               None
                             </DropdownMenuItem>
                             {projects.map(p => (
-                              <DropdownMenuItem key={p.id} onClick={() => updateChatProject(activeChatId, p.id)}>
+                              <DropdownMenuItem key={p.id} onClick={() => {
+                                updateChatProject(activeChatId, p.id);
+                                setActiveProjectId(p.id);
+                              }}>
                                 {p.name}
                               </DropdownMenuItem>
                             ))}
@@ -313,9 +330,6 @@ export function MainWorkspace({ currentView, setCurrentView, activeChatId, setAc
                 </div>
                 
                 <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800">
-                    <Mic className="w-[18px] h-[18px]" />
-                  </Button>
                   {runIsActive ? (
                     <Button onClick={handleInterrupt} disabled={runStatus === 'cancelling'} size="icon" className="h-8 w-8 rounded-full bg-rose-500/90 text-white hover:bg-rose-400 ml-1 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed" title="Stop Codex run">
                       {runStatus === 'cancelling' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Square className="w-4 h-4 fill-current" />}
@@ -379,15 +393,10 @@ export function MainWorkspace({ currentView, setCurrentView, activeChatId, setAc
                   <Plus className="w-5 h-5" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="start">
-                  <DropdownMenuItem>
-                    <FileImage className="w-4 h-4 mr-2" />
-                    Add Image
+                  <DropdownMenuItem onClick={handleCreateProject}>
+                    <FolderPlus className="w-4 h-4 mr-2" />
+                    Add Project Folder
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Music className="w-4 h-4 mr-2" />
-                    Add Audio
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
                   <DropdownMenuSub>
                     <DropdownMenuSubTrigger>
                       <Folder className="w-4 h-4 mr-2" />
@@ -425,9 +434,6 @@ export function MainWorkspace({ currentView, setCurrentView, activeChatId, setAc
               <Button variant="ghost" size="sm" className="h-8 text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800 font-normal px-2">
                 Codex gpt-5.2 <ChevronDown className="w-3.5 h-3.5 opacity-60 ml-1" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800">
-                <Mic className="w-[18px] h-[18px]" />
-              </Button>
               <Button onClick={handleSendMessage} disabled={!canSend} size="icon" className="h-8 w-8 rounded-full bg-zinc-100 text-black hover:bg-white ml-1 shadow-sm transition-transform hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed">
                 <ArrowUp className="w-4 h-4 stroke-[2.5]" />
               </Button>
@@ -440,18 +446,22 @@ export function MainWorkspace({ currentView, setCurrentView, activeChatId, setAc
           <ActionCard 
             icon={<ImageIcon className="w-5 h-5 text-zinc-400 mb-3 opacity-80" />}
             text="Summarize local repo state"
+            onClick={() => setChatInput("Summarize the current repository state and call out the highest-risk unfinished areas.")}
           />
           <ActionCard 
             icon={<Map className="w-5 h-5 text-zinc-400 mb-3 opacity-80" />}
             text="Map desktop follow-up work"
+            onClick={() => setChatInput("Map the next desktop stabilization tasks for this project with concrete acceptance checks.")}
           />
           <ActionCard 
             icon={<LayoutGrid className="w-5 h-5 text-zinc-400 mb-3 opacity-80" />}
             text="Draft a small implementation plan"
+            onClick={() => setChatInput("Draft a small implementation plan for the next safe, testable improvement.")}
           />
           <ActionCard 
             icon={<LinkIcon className="w-5 h-5 text-zinc-400 mb-3 opacity-80" />}
             text="Inspect package readiness"
+            onClick={() => setChatInput("Inspect package readiness and list any issues before distribution.")}
           />
         </div>
       </div>
@@ -459,12 +469,77 @@ export function MainWorkspace({ currentView, setCurrentView, activeChatId, setAc
   );
 }
 
-function ActionCard({ icon, text }: { icon: React.ReactNode, text: string }) {
+function LocalStatusWorkspace({
+  icon,
+  title,
+  description,
+  items,
+  notices,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  items: Array<{label: string; value: string}>;
+  notices: string[];
+}) {
   return (
-    <div className="flex flex-col p-4 bg-[#18181A]/40 border border-zinc-800/60 rounded-xl hover:bg-zinc-800/40 cursor-pointer transition-colors w-[170px] h-[110px] text-zinc-400 group">
+    <div className="flex-1 flex flex-col h-full p-8">
+      <div className="max-w-3xl w-full mt-5">
+        <div className="flex items-start justify-between gap-4 border-b border-white/5 pb-5">
+          <div className="flex items-start gap-3">
+            <div className="h-9 w-9 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-zinc-300">
+              {icon}
+            </div>
+            <div>
+              <h2 className="text-xl font-medium text-zinc-100">{title}</h2>
+              <p className="text-sm text-zinc-500 mt-1 max-w-xl">{description}</p>
+            </div>
+          </div>
+          <ShieldCheck className="w-5 h-5 text-emerald-400 mt-1" />
+        </div>
+
+        <div className="grid grid-cols-1 gap-2 mt-5">
+          {items.map((item) => (
+            <div key={item.label} className="flex items-center justify-between gap-4 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm">
+              <span className="text-zinc-500">{item.label}</span>
+              <span className="text-zinc-200 text-right truncate max-w-[520px]">{item.value}</span>
+            </div>
+          ))}
+        </div>
+
+        {notices.length > 0 && (
+          <div className="mt-5 flex flex-col gap-2">
+            {notices.map((notice) => (
+              <div key={notice} className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+                {notice}
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
+            <Terminal className="w-4 h-4 text-zinc-400 mb-3" />
+            <p className="text-sm font-medium text-zinc-200">Renderer boundary</p>
+            <p className="text-xs text-zinc-500 mt-1">No direct filesystem or process APIs are exposed outside `window.kevlar`.</p>
+          </div>
+          <div className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
+            <CalendarClock className="w-4 h-4 text-zinc-400 mb-3" />
+            <p className="text-sm font-medium text-zinc-200">Foreground execution</p>
+            <p className="text-xs text-zinc-500 mt-1">Runs are explicit per-chat Codex CLI processes with persisted status.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ActionCard({ icon, text, onClick }: { icon: React.ReactNode, text: string, onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="flex flex-col p-4 bg-[#18181A]/40 border border-zinc-800/60 rounded-xl hover:bg-zinc-800/40 cursor-pointer transition-colors w-[170px] h-[110px] text-zinc-400 group text-left">
       {icon}
       <span className="text-[13px] font-medium leading-snug group-hover:text-zinc-200 mt-auto opacity-90">{text}</span>
-    </div>
+    </button>
   );
 }
 

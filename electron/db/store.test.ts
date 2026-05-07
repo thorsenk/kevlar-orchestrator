@@ -5,15 +5,26 @@ import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import {closeDB} from './index';
 import {
   appendMessage,
+  addTeamMember,
+  addTeamRole,
+  clearSideCarCards,
   createChat,
   createCodexRun,
   createProject,
+  createTask,
+  createTeam,
   getLatestAgentRunState,
   listCodexEvents,
+  listChats,
   listMessages,
   listProjects,
+  listTasks,
   persistCodexEvent,
   promoteSideCarCard,
+  removeTeamMember,
+  removeTeamRole,
+  removeProject,
+  updateTask,
   replaceSideCarCards,
   updateCodexRun,
 } from './store';
@@ -60,6 +71,7 @@ describe('local SQLite store', () => {
       role: 'user',
       content: 'Side-Car Use SQLite\n\nKeep desktop data local.',
     });
+    expect(clearSideCarCards(chat.id).removed).toBe(1);
 
     const running = createCodexRun(chat.id, 'run-2');
     expect(running).toMatchObject({chatId: chat.id, runId: 'run-2', status: 'running'});
@@ -72,5 +84,40 @@ describe('local SQLite store', () => {
     });
     expect(completed).toMatchObject({status: 'completed', tokenCount: 123, stderr: 'usage summary'});
     expect(getLatestAgentRunState(chat.id)).toMatchObject({runId: 'run-2', status: 'completed'});
+  });
+
+  it('edits local team members and roles', () => {
+    const team = createTeam('Desktop Agents', 'Local team');
+    const withMember = addTeamMember(team.id, {name: 'Planner', role: 'Planning'});
+    expect(withMember.members).toEqual([
+      expect.objectContaining({name: 'Planner', role: 'Planning', status: 'idle'}),
+    ]);
+
+    const withRole = addTeamRole(team.id, {name: 'Reviewer', permissions: ['read', 'comment']});
+    expect(withRole.roles).toEqual([expect.objectContaining({name: 'Reviewer', permissions: ['read', 'comment']})]);
+
+    const withoutMember = removeTeamMember(team.id, withMember.members[0].agentId);
+    expect(withoutMember.members).toEqual([]);
+
+    const withoutRole = removeTeamRole(team.id, withRole.roles[0].id);
+    expect(withoutRole.roles).toEqual([]);
+  });
+
+  it('keeps chats and tasks readable when a project is removed', () => {
+    const rootPath = fs.mkdtempSync(path.join(tempDir, 'project-'));
+    const project = createProject(rootPath, 'Remove Me');
+    const chat = createChat('Project chat', project.id);
+    const task = createTask('Project task', project.id);
+
+    expect(removeProject(project.id)).toEqual({removed: true});
+    expect(listChats().find((item) => item.id === chat.id)).toMatchObject({projectId: null});
+    expect(listTasks().find((item) => item.id === task.id)).toMatchObject({projectId: null, projectTag: 'Global'});
+  });
+
+  it('updates task status, assignment, and title locally', () => {
+    const task = createTask('Draft task');
+    expect(updateTask(task.id, {status: 'Processing'})).toMatchObject({status: 'Processing'});
+    expect(updateTask(task.id, {assignedAgent: 'Planner'})).toMatchObject({assignedAgent: 'Planner'});
+    expect(updateTask(task.id, {title: 'Reviewed task'})).toMatchObject({title: 'Reviewed task'});
   });
 });

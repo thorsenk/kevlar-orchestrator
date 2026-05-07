@@ -16,6 +16,8 @@ import type {
   Task,
   TaskStatus,
   Team,
+  TeamMember,
+  TeamRole,
 } from '../../src/shared/types';
 import {getDB} from './index';
 
@@ -450,6 +452,49 @@ export function updateTeamProfile(id: string, name: string, description: string)
   return getTeam(id);
 }
 
+export function addTeamMember(teamId: string, input: {name: string; role: string}): Team {
+  const team = getTeam(teamId);
+  const member: TeamMember = {
+    agentId: randomUUID(),
+    name: input.name,
+    role: input.role,
+    status: 'idle',
+  };
+  getDB()
+    .prepare(`UPDATE teams SET members = ?, updated_at = ? WHERE id = ?`)
+    .run(JSON.stringify([...team.members, member]), now(), teamId);
+  return getTeam(teamId);
+}
+
+export function removeTeamMember(teamId: string, agentId: string): Team {
+  const team = getTeam(teamId);
+  getDB()
+    .prepare(`UPDATE teams SET members = ?, updated_at = ? WHERE id = ?`)
+    .run(JSON.stringify(team.members.filter((member) => member.agentId !== agentId)), now(), teamId);
+  return getTeam(teamId);
+}
+
+export function addTeamRole(teamId: string, input: {name: string; permissions: string[]}): Team {
+  const team = getTeam(teamId);
+  const role: TeamRole = {
+    id: randomUUID(),
+    name: input.name,
+    permissions: input.permissions,
+  };
+  getDB()
+    .prepare(`UPDATE teams SET roles = ?, updated_at = ? WHERE id = ?`)
+    .run(JSON.stringify([...team.roles, role]), now(), teamId);
+  return getTeam(teamId);
+}
+
+export function removeTeamRole(teamId: string, roleId: string): Team {
+  const team = getTeam(teamId);
+  getDB()
+    .prepare(`UPDATE teams SET roles = ?, updated_at = ? WHERE id = ?`)
+    .run(JSON.stringify(team.roles.filter((role) => role.id !== roleId)), now(), teamId);
+  return getTeam(teamId);
+}
+
 export function removeTeam(id: string): {removed: boolean} {
   const result = getDB().prepare(`DELETE FROM teams WHERE id = ?`).run(id);
   return {removed: result.changes > 0};
@@ -480,6 +525,11 @@ export function replaceSideCarCards(chatId: string, cards: Array<{kind: SideCarK
   });
   transaction();
   return listSideCarCards(chatId);
+}
+
+export function clearSideCarCards(chatId: string): {removed: number} {
+  const result = getDB().prepare(`DELETE FROM sidecar_cards WHERE chat_id = ?`).run(chatId);
+  return {removed: result.changes};
 }
 
 export function promoteSideCarCard(cardId: string): Message {

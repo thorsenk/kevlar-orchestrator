@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { AgentTask } from '@/types/task';
 import { updateTaskStatus, deleteTask, updateTaskTitle } from '@/lib/mutations';
+import type {TaskStatus} from '@/shared/types';
 
 interface TaskDetailModalProps {
   task: AgentTask;
@@ -12,6 +13,7 @@ interface TaskDetailModalProps {
 export function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editTitleValue, setEditTitleValue] = useState(task.title);
+  const [deleteArmed, setDeleteArmed] = useState(false);
 
   const handleApprove = async () => {
     await updateTaskStatus(task.id, 'Completed');
@@ -29,10 +31,12 @@ export function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
   };
 
   const handleDelete = async () => {
-    if (confirm('Are you sure you want to delete this task?')) {
-      await deleteTask(task.id);
-      onClose();
+    if (!deleteArmed) {
+      setDeleteArmed(true);
+      return;
     }
+    await deleteTask(task.id);
+    onClose();
   };
 
   const handleSaveTitle = async () => {
@@ -40,6 +44,11 @@ export function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
       await updateTaskTitle(task.id, editTitleValue.trim());
     }
     setIsEditingTitle(false);
+  };
+
+  const handleSetStatus = async (status: TaskStatus) => {
+    await updateTaskStatus(task.id, status);
+    onClose();
   };
   return (
     // Absolute positioning to fill ONLY the MainWorkspace canvas
@@ -67,7 +76,7 @@ export function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
                    {task.status}
                  </span>
                </div>
-               <Button onClick={handleDelete} variant="ghost" size="icon" className="h-6 w-6 text-zinc-500 hover:text-red-400">
+               <Button onClick={handleDelete} variant="ghost" size="icon" title={deleteArmed ? 'Confirm delete task' : 'Delete task'} className={`h-6 w-6 ${deleteArmed ? 'text-red-400 bg-red-500/10' : 'text-zinc-500 hover:text-red-400'}`}>
                  <Trash2 className="w-3.5 h-3.5" />
                </Button>
             </div>
@@ -106,6 +115,24 @@ export function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
 
         {/* Body (Scrollable) */}
         <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
+          <div className="mb-5 rounded-xl border border-white/10 bg-black/20 p-3">
+            <div className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">Status</div>
+            <div className="flex flex-wrap gap-2">
+              {(['Idle', 'Processing', 'Awaiting User', 'Completed'] as TaskStatus[]).map((status) => (
+                <Button
+                  key={status}
+                  onClick={() => handleSetStatus(status)}
+                  disabled={task.status === status}
+                  size="sm"
+                  variant="outline"
+                  className="h-8 bg-white/5 border-white/10 text-zinc-300 hover:bg-white/10 hover:text-white disabled:opacity-50"
+                >
+                  {status}
+                </Button>
+              ))}
+            </div>
+          </div>
+
           {task.payloadType === 'none' && (
             <div className="flex flex-col items-center justify-center h-48 text-zinc-500 gap-3">
               <AlertCircle className="w-8 h-8 opacity-50" />

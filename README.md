@@ -1,7 +1,3 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
-
 # Kevlar Codex Desktop
 
 Local-first Electron desktop control plane for Codex CLI.
@@ -37,6 +33,16 @@ Use this path for the first desktop checkpoint:
 4. Send a simple prompt and confirm assistant output streams into the chat.
 5. Restart the packaged app and confirm projects, chats, and messages are still present from local SQLite storage.
 6. Run Side-Car on that chat and promote one generated card into the main chat.
+
+## Repaired Surface Area
+
+This build removes the remaining old scaffold assumptions from the first desktop checkpoint:
+
+- Home suggestions now seed real Codex prompts instead of acting as inert cards.
+- Project/chat/task/team edits persist through SQLite-backed IPC.
+- Side-Car cards can be filtered, promoted individually, and cleared locally.
+- Team members and roles use inline local forms instead of browser prompts.
+- Packaged launch verification checks both the app process and the local SQLite run-state schema.
 
 Verification commands:
 

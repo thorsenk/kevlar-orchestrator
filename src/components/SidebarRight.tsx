@@ -1,31 +1,21 @@
 import React from "react";
 import { 
-  Settings2, 
-  Video, 
   FileText, 
-  Wand2, 
-  BarChart2, 
   CheckCircle2, 
   HelpCircle, 
   Rocket, 
   Lock, 
   Share,
   User,
-  ListTodo,
-  Pause,
   Play,
-  Square,
   Trash2
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 
-import {promoteSideCarCard, runSideCar} from "@/lib/mutations";
+import {clearSideCarCards, promoteSideCarCard, runSideCar} from "@/lib/mutations";
 import type { ViewState } from "./AppShell";
 import type {SideCarCard as SideCarCardType} from "@/shared/types";
 
@@ -38,12 +28,17 @@ export function SidebarRight({
   setActiveChatId: (id: string | null) => void;
   setCurrentView: (view: ViewState) => void;
 }) {
-  const [activePrimaryTab, setActivePrimaryTab] = React.useState('Capture');
-  const [activeSubTab, setActiveSubTab] = React.useState('Meeting Notes');
+  const [activeSubTab, setActiveSubTab] = React.useState<'Summary' | 'Decisions' | 'Questions' | 'Next Steps'>('Summary');
   const [isSending, setIsSending] = React.useState(false);
   const [isRunning, setIsRunning] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [cards, setCards] = React.useState<SideCarCardType[]>([]);
+  const visibleCards = cards.filter((card) => {
+    if (activeSubTab === 'Summary') return card.kind === 'summary';
+    if (activeSubTab === 'Decisions') return card.kind === 'decision';
+    if (activeSubTab === 'Questions') return card.kind === 'open_question';
+    return card.kind === 'next_step';
+  });
 
   React.useEffect(() => {
     if (!activeChatId) {
@@ -74,11 +69,16 @@ export function SidebarRight({
 
   const handleSendToPrimary = async () => {
     if (!activeChatId || cards.length === 0) return;
+    await handlePromoteCard(cards[0].id);
+  };
+
+  const handlePromoteCard = async (cardId: string) => {
+    if (!activeChatId) return;
     try {
       setIsSending(true);
       setActiveChatId(activeChatId);
       setCurrentView('chat');
-      await promoteSideCarCard(cards[0].id);
+      await promoteSideCarCard(cardId);
 
     } catch (err) {
       console.error(err);
@@ -86,6 +86,12 @@ export function SidebarRight({
     } finally {
       setIsSending(false);
     }
+  };
+
+  const handleClearCards = async () => {
+    if (!activeChatId || cards.length === 0) return;
+    await clearSideCarCards(activeChatId);
+    setCards([]);
   };
 
   return (
@@ -97,47 +103,22 @@ export function SidebarRight({
       </div>
 
       <div className="px-4 pb-4 flex flex-col gap-5 border-b border-white/[0.04] shadow-[0_1px_0_rgba(0,0,0,0.3)] relative z-10">
-        <div className="flex items-center gap-2">
-          <Select defaultValue="observer">
-            <SelectTrigger className="w-full bg-black/20 backdrop-blur-md border border-black/40 shadow-[inset_0_1px_4px_rgba(0,0,0,0.4),0_1px_0_rgba(255,255,255,0.05)] rounded-xl h-9 hover:bg-black/30 transition-all text-white/80">
-              <div className="flex items-center gap-2 font-medium mix-blend-plus-lighter">
-                <User className="w-4 h-4 text-white/60" />
-                <SelectValue placeholder="Select mode" />
-              </div>
-            </SelectTrigger>
-            <SelectContent className="bg-[#1C1C1E]/90 backdrop-blur-3xl border border-white/[0.08] text-white/90">
-              <SelectItem value="observer">Observer</SelectItem>
-              <SelectItem value="participant">Participant</SelectItem>
-              <SelectItem value="facilitator">Facilitator</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button variant="ghost" size="icon" className="h-9 w-9 text-white/60 bg-black/20 border border-black/40 shadow-[inset_0_1px_4px_rgba(0,0,0,0.4),0_1px_0_rgba(255,255,255,0.05)] hover:bg-black/30 hover:text-white shrink-0 rounded-xl transition-all mix-blend-plus-lighter">
-            <Settings2 className="w-4 h-4" />
-          </Button>
+        <div className="flex items-center gap-2 bg-black/20 backdrop-blur-md border border-black/40 shadow-[inset_0_1px_4px_rgba(0,0,0,0.4),0_1px_0_rgba(255,255,255,0.05)] rounded-xl h-9 px-3 text-white/80">
+          <User className="w-4 h-4 text-white/60" />
+          <span className="text-sm font-medium mix-blend-plus-lighter">Observer mode</span>
         </div>
 
-        {/* Primary Tabs */}
-        <div className="grid grid-cols-4 gap-2 bg-black/20 p-1.5 rounded-2xl shadow-[inset_0_1px_6px_rgba(0,0,0,0.5),0_1px_0_rgba(255,255,255,0.03)] border border-white/[0.02]">
-          <TabButton icon={<Video className="w-4 h-4" />} label="Capture" active={activePrimaryTab === 'Capture'} onClick={() => setActivePrimaryTab('Capture')} />
-          <TabButton icon={<FileText className="w-4 h-4" />} label="Review" active={activePrimaryTab === 'Review'} onClick={() => setActivePrimaryTab('Review')} />
-          <TabButton icon={<Wand2 className="w-4 h-4" />} label="Assist" active={activePrimaryTab === 'Assist'} onClick={() => setActivePrimaryTab('Assist')} />
-          <TabButton icon={<BarChart2 className="w-4 h-4" />} label="Visualize" active={activePrimaryTab === 'Visualize'} onClick={() => setActivePrimaryTab('Visualize')} />
-        </div>
-
-        {/* Sub Navigation */}
-        <div className="flex justify-between px-2 pt-1 text-[13px] font-medium border-b border-black/40 shadow-[0_1px_0_rgba(255,255,255,0.03)] relative">
-          <div onClick={() => setActiveSubTab('Meeting Notes')} className={`pb-2.5 cursor-pointer relative mix-blend-plus-lighter transition-colors ${activeSubTab === 'Meeting Notes' ? 'text-white/90' : 'text-white/40 hover:text-white/70'}`}>
-            Meeting Notes
-            {activeSubTab === 'Meeting Notes' && <div className="absolute -bottom-[1px] left-0 right-0 h-[2px] bg-white/40 rounded-t-full shadow-[0_0_8px_rgba(255,255,255,0.5)]" />}
-          </div>
-          <div onClick={() => setActiveSubTab('Decisions')} className={`pb-2.5 cursor-pointer relative mix-blend-plus-lighter transition-colors ${activeSubTab === 'Decisions' ? 'text-white/90' : 'text-white/40 hover:text-white/70'}`}>
-            Decisions
-            {activeSubTab === 'Decisions' && <div className="absolute -bottom-[1px] left-0 right-0 h-[2px] bg-white/40 rounded-t-full shadow-[0_0_8px_rgba(255,255,255,0.5)]" />}
-          </div>
-          <div onClick={() => setActiveSubTab('Timeline')} className={`pb-2.5 cursor-pointer relative mix-blend-plus-lighter transition-colors ${activeSubTab === 'Timeline' ? 'text-white/90' : 'text-white/40 hover:text-white/70'}`}>
-            Timeline
-            {activeSubTab === 'Timeline' && <div className="absolute -bottom-[1px] left-0 right-0 h-[2px] bg-white/40 rounded-t-full shadow-[0_0_8px_rgba(255,255,255,0.5)]" />}
-          </div>
+        <div className="grid grid-cols-4 gap-1 px-1 pt-1 text-[12px] font-medium border-b border-black/40 shadow-[0_1px_0_rgba(255,255,255,0.03)] relative">
+          {(['Summary', 'Decisions', 'Questions', 'Next Steps'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveSubTab(tab)}
+              className={`pb-2.5 cursor-pointer relative mix-blend-plus-lighter transition-colors text-center ${activeSubTab === tab ? 'text-white/90' : 'text-white/40 hover:text-white/70'}`}
+            >
+              {tab}
+              {activeSubTab === tab && <div className="absolute -bottom-[1px] left-1 right-1 h-[2px] bg-white/40 rounded-t-full shadow-[0_0_8px_rgba(255,255,255,0.5)]" />}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -151,38 +132,37 @@ export function SidebarRight({
           </div>
         </div>
 
-        {/* Agent Controls */}
         <div className="flex items-center justify-between gap-2 mb-4">
           <div className="flex items-center gap-1 bg-black/20 p-1 rounded-xl border border-white/[0.04] shadow-[inset_0_1px_4px_rgba(0,0,0,0.4)]">
-             <Button disabled variant="ghost" size="icon" className="h-7 w-7 text-white/30 hover:bg-white/[0.1] hover:text-white rounded-lg transition-all mix-blend-plus-lighter disabled:opacity-40" title="Pause">
-               <Pause className="w-3.5 h-3.5" fill="currentColor" />
-             </Button>
              <Button onClick={handleRunSideCar} disabled={!activeChatId || isRunning} variant="ghost" size="icon" className="h-7 w-7 text-white/70 hover:bg-white/[0.1] hover:text-white rounded-lg transition-all mix-blend-plus-lighter disabled:opacity-40" title="Run Side-Car">
                <Play className="w-3.5 h-3.5" fill="currentColor" />
              </Button>
-             <Button disabled variant="ghost" size="icon" className="h-7 w-7 text-red-400 hover:bg-red-500/20 hover:text-red-300 rounded-lg transition-all mix-blend-plus-lighter disabled:opacity-40" title="Stop">
-               <Square className="w-3.5 h-3.5" fill="currentColor" />
-             </Button>
           </div>
           
-          <Button variant="ghost" size="sm" className="h-8 text-[11px] font-medium text-white/50 border border-white/[0.04] bg-white/[0.02] hover:bg-white/[0.06] hover:text-white/90 rounded-xl transition-all mix-blend-plus-lighter px-2.5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]">
+          <Button onClick={handleClearCards} disabled={!activeChatId || cards.length === 0} variant="ghost" size="sm" className="h-8 text-[11px] font-medium text-white/50 border border-white/[0.04] bg-white/[0.02] hover:bg-white/[0.06] hover:text-white/90 rounded-xl transition-all mix-blend-plus-lighter px-2.5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] disabled:opacity-40">
             <Trash2 className="w-3 h-3 mr-1.5" />
             Clear History
           </Button>
         </div>
 
         <div className="flex flex-col gap-3">
-          {cards.length > 0 ? (
-            cards.map((card) => (
+          {visibleCards.length > 0 ? (
+            visibleCards.map((card) => (
               <React.Fragment key={card.id}>
                 <StreamCard
                   icon={iconForKind(card.kind)}
                   title={card.title}
                   items={card.content.split('\n').filter(Boolean)}
                   isTasks={card.kind === 'next_step'}
+                  promoted={Boolean(card.promotedAt)}
+                  onPromote={() => handlePromoteCard(card.id)}
                 />
               </React.Fragment>
             ))
+          ) : cards.length > 0 ? (
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4 text-sm text-white/60">
+              No {activeSubTab.toLowerCase()} cards in the latest Side-Car run.
+            </div>
           ) : (
             <EmptySideCarState activeChatId={activeChatId} isRunning={isRunning} error={error} />
           )}
@@ -192,7 +172,7 @@ export function SidebarRight({
       {/* Footer Actions */}
       <div className="p-4 border-t border-black/40 shadow-[0_-1px_0_rgba(255,255,255,0.03),0_-10px_30px_rgba(0,0,0,0.4)] bg-transparent flex flex-col gap-3 relative z-10">
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="flex-1 bg-white/[0.04] border-white/[0.08] text-white/80 hover:bg-white/[0.08] hover:text-white transition-all duration-300 h-10 font-medium shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] rounded-xl mix-blend-plus-lighter">
+          <Button disabled variant="outline" className="flex-1 bg-white/[0.04] border-white/[0.08] text-white/80 hover:bg-white/[0.08] hover:text-white transition-all duration-300 h-10 font-medium shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] rounded-xl mix-blend-plus-lighter disabled:opacity-60">
             <Lock className="w-4 h-4 mr-2" />
             Keep Isolated
           </Button>
@@ -241,15 +221,6 @@ function EmptySideCarState({activeChatId, isRunning, error}: {activeChatId: stri
   );
 }
 
-function TabButton({ icon, label, active, onClick }: { icon: React.ReactNode, label: string, active?: boolean, onClick?: () => void }) {
-  return (
-    <div onClick={onClick} className={`flex flex-col items-center justify-center py-2.5 flex-1 rounded-xl cursor-pointer transition-all duration-300 relative overflow-hidden mix-blend-plus-lighter ${active ? 'bg-white/[0.12] shadow-[0_2px_8px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.1)] text-white' : 'text-white/50 bg-transparent hover:text-white/80 hover:bg-white/[0.04]'}`}>
-      <div className={`mb-1.5 ${active ? 'opacity-100' : 'opacity-80'}`}>{icon}</div>
-      <span className="text-[11px] font-medium leading-none tracking-wide">{label}</span>
-      </div>
-  );
-}
-
 function iconForKind(kind: SideCarCardType['kind']) {
   switch (kind) {
     case 'decision':
@@ -267,12 +238,16 @@ function StreamCard({
   icon, 
   title, 
   items, 
-  isTasks 
+  isTasks,
+  promoted,
+  onPromote,
 }: { 
   icon: React.ReactNode, 
   title: string, 
   items: string[], 
-  isTasks?: boolean
+  isTasks?: boolean,
+  promoted?: boolean,
+  onPromote: () => void,
 }) {
   return (
     <Card className="p-4 bg-white/[0.04] backdrop-blur-xl border-white/[0.08] rounded-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_8px_20px_rgba(0,0,0,0.2)] hover:bg-white/[0.06] hover:border-white/[0.1] transition-all duration-300 relative overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/[0.04] before:to-transparent before:pointer-events-none">
@@ -280,11 +255,22 @@ function StreamCard({
       {/* Specular highlight border for 3D card affect */}
       <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/[0.2] to-transparent pointer-events-none mix-blend-plus-lighter" />
       
-      <div className="flex items-center gap-2.5 mb-3 relative z-10 mix-blend-plus-lighter">
-        <div className="p-1.5 rounded-lg bg-black/30 backdrop-blur-md border border-black/40 block w-fit shadow-[inset_0_1px_2px_rgba(0,0,0,0.5),0_1px_0_rgba(255,255,255,0.06)] text-white/80">
-          {icon}
+      <div className="flex items-start justify-between gap-2 mb-3 relative z-10 mix-blend-plus-lighter">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="p-1.5 rounded-lg bg-black/30 backdrop-blur-md border border-black/40 block w-fit shadow-[inset_0_1px_2px_rgba(0,0,0,0.5),0_1px_0_rgba(255,255,255,0.06)] text-white/80 shrink-0">
+            {icon}
+          </div>
+          <h4 className="font-semibold text-[13px] text-white/95 tracking-wide drop-shadow-sm truncate">{title}</h4>
         </div>
-        <h4 className="font-semibold text-[13px] text-white/95 tracking-wide drop-shadow-sm">{title}</h4>
+        <Button
+          onClick={onPromote}
+          disabled={promoted}
+          variant="ghost"
+          size="sm"
+          className="h-7 px-2 text-[11px] text-white/55 hover:text-white hover:bg-white/10 shrink-0 disabled:opacity-40"
+        >
+          {promoted ? 'Promoted' : 'Promote'}
+        </Button>
       </div>
       <ul className={`text-[13px] text-white/60 flex flex-col gap-2 relative z-10 mix-blend-plus-lighter ${isTasks ? '' : 'pl-1 space-y-1'}`}>
         {items.map((item, i) => (

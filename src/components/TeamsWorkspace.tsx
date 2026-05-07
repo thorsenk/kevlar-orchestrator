@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Plus, Settings2, Shield, MoreVertical, UserPlus, Search, Trash2, Edit2 } from 'lucide-react';
-import { AgentTeam } from '@/types/team';
 import { useTeams } from '@/lib/db';
-import { createTeam, updateTeamProfile, deleteTeam } from '@/lib/mutations';
+import { addTeamMember, addTeamRole, createTeam, deleteTeam, removeTeamMember, removeTeamRole, updateTeamProfile } from '@/lib/mutations';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -16,15 +15,31 @@ export function TeamsWorkspace() {
   const teams = useTeams();
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [memberFormOpen, setMemberFormOpen] = useState(false);
+  const [memberName, setMemberName] = useState("");
+  const [memberRole, setMemberRole] = useState("Contributor");
+  const [roleFormOpen, setRoleFormOpen] = useState(false);
+  const [roleName, setRoleName] = useState("");
+  const [rolePermissions, setRolePermissions] = useState("read, comment");
 
-  const filteredTeams = teams.filter(t => t.name.toLowerCase().includes(searchQuery.toLowerCase()) || t.description.toLowerCase().includes(searchQuery.toLowerCase()));
-
-  // Auto-select first team if available and none selected
-  if (filteredTeams.length > 0 && selectedTeamId === null && !searchQuery) {
-    setSelectedTeamId(filteredTeams[0].id);
-  }
+  const filteredTeams = React.useMemo(() => {
+    const query = searchQuery.toLowerCase();
+    return teams.filter(t => t.name.toLowerCase().includes(query) || t.description.toLowerCase().includes(query));
+  }, [searchQuery, teams]);
 
   const selectedTeam = teams.find(t => t.id === selectedTeamId) || null;
+
+  useEffect(() => {
+    if (selectedTeamId && !teams.some((team) => team.id === selectedTeamId)) {
+      setSelectedTeamId(null);
+    }
+  }, [selectedTeamId, teams]);
+
+  useEffect(() => {
+    if (filteredTeams.length > 0 && selectedTeamId === null && !searchQuery) {
+      setSelectedTeamId(filteredTeams[0].id);
+    }
+  }, [filteredTeams, searchQuery, selectedTeamId]);
 
   const handleNewTeam = async () => {
     const newTeamId = await createTeam("New Team", "A powerful agent team");
@@ -50,6 +65,29 @@ export function TeamsWorkspace() {
       await updateTeamProfile(selectedTeam.id, editName.trim(), editDesc.trim());
     }
     setIsEditing(false);
+  };
+
+  const handleAddMember = async () => {
+    if (!selectedTeam || !memberName.trim()) return;
+    await addTeamMember(selectedTeam.id, memberName.trim(), memberRole.trim() || 'Contributor');
+    setMemberName("");
+    setMemberRole("Contributor");
+    setMemberFormOpen(false);
+  };
+
+  const handleAddRole = async () => {
+    if (!selectedTeam || !roleName.trim()) return;
+    await addTeamRole(
+      selectedTeam.id,
+      roleName.trim(),
+      rolePermissions
+        .split(',')
+        .map((permission) => permission.trim())
+        .filter(Boolean),
+    );
+    setRoleName("");
+    setRolePermissions("read, comment");
+    setRoleFormOpen(false);
   };
 
   return (
@@ -151,10 +189,8 @@ export function TeamsWorkspace() {
                       <DropdownMenuItem 
                         className="text-red-400 focus:bg-red-500/10 focus:text-red-500"
                         onClick={async () => {
-                          if (confirm('Are you sure you want to delete this team?')) {
-                            await deleteTeam(selectedTeam.id);
-                            setSelectedTeamId(null);
-                          }
+                          await deleteTeam(selectedTeam.id);
+                          setSelectedTeamId(null);
                         }}
                       >
                         <Trash2 className="w-4 h-4 mr-2" />
@@ -175,11 +211,23 @@ export function TeamsWorkspace() {
                      Members
                     <span className="text-xs bg-white/10 text-zinc-400 px-2 py-0.5 rounded-full">{selectedTeam.members.length}</span>
                   </h3>
-                  <Button variant="ghost" size="sm" className="h-8 text-xs text-zinc-400 hover:text-white hover:bg-white/10">
+                  <Button onClick={() => setMemberFormOpen(true)} variant="ghost" size="sm" className="h-8 text-xs text-zinc-400 hover:text-white hover:bg-white/10">
                     <UserPlus className="w-3.5 h-3.5 mr-1.5" />
                     Add Member
                   </Button>
                 </div>
+                {memberFormOpen && (
+                  <div className="mb-4 rounded-xl border border-white/10 bg-black/20 p-3 flex flex-col gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <Input value={memberName} onChange={(e) => setMemberName(e.target.value)} placeholder="Agent name" className="bg-white/5 border-white/10 text-sm" />
+                      <Input value={memberRole} onChange={(e) => setMemberRole(e.target.value)} placeholder="Role" className="bg-white/5 border-white/10 text-sm" />
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button size="sm" variant="ghost" onClick={() => setMemberFormOpen(false)} className="h-8 text-xs text-zinc-400">Cancel</Button>
+                      <Button size="sm" onClick={handleAddMember} disabled={!memberName.trim()} className="h-8 text-xs bg-zinc-100 text-black hover:bg-white disabled:opacity-40">Add Member</Button>
+                    </div>
+                  </div>
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {selectedTeam.members.map(member => (
                     <div key={member.agentId} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/[0.07] transition-colors group">
@@ -195,11 +243,29 @@ export function TeamsWorkspace() {
                           <span className="text-xs text-zinc-500">{member.role}</span>
                         </div>
                       </div>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-zinc-500 hover:text-zinc-300 shrink-0">
-                        <MoreVertical className="w-4 h-4" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-zinc-500 hover:text-zinc-300 shrink-0">
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-40">
+                          <DropdownMenuItem
+                            className="text-red-400 focus:bg-red-500/10 focus:text-red-500"
+                            onClick={() => removeTeamMember(selectedTeam.id, member.agentId)}
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Remove
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   ))}
+                  {selectedTeam.members.length === 0 && (
+                    <div className="rounded-xl border border-dashed border-white/10 p-4 text-sm text-zinc-500">
+                      No members added.
+                    </div>
+                  )}
                 </div>
               </section>
 
@@ -209,18 +275,33 @@ export function TeamsWorkspace() {
                   <h3 className="text-sm font-medium text-zinc-200 flex items-center gap-2">
                      Roles & Permissions
                   </h3>
-                  <Button variant="ghost" size="sm" className="h-8 text-xs text-zinc-400 hover:text-white hover:bg-white/10">
+                  <Button onClick={() => setRoleFormOpen(true)} variant="ghost" size="sm" className="h-8 text-xs text-zinc-400 hover:text-white hover:bg-white/10">
                     <Shield className="w-3.5 h-3.5 mr-1.5" />
                     New Role
                   </Button>
                 </div>
+                {roleFormOpen && (
+                  <div className="mb-4 rounded-xl border border-white/10 bg-black/20 p-3 flex flex-col gap-3">
+                    <Input value={roleName} onChange={(e) => setRoleName(e.target.value)} placeholder="Role name" className="bg-white/5 border-white/10 text-sm" />
+                    <Input value={rolePermissions} onChange={(e) => setRolePermissions(e.target.value)} placeholder="Permissions, comma separated" className="bg-white/5 border-white/10 text-sm" />
+                    <div className="flex justify-end gap-2">
+                      <Button size="sm" variant="ghost" onClick={() => setRoleFormOpen(false)} className="h-8 text-xs text-zinc-400">Cancel</Button>
+                      <Button size="sm" onClick={handleAddRole} disabled={!roleName.trim()} className="h-8 text-xs bg-zinc-100 text-black hover:bg-white disabled:opacity-40">Add Role</Button>
+                    </div>
+                  </div>
+                )}
                 <div className="flex flex-col gap-3">
                   {selectedTeam.roles.map(role => (
                     <div key={role.id} className="flex flex-col p-4 rounded-xl bg-black/20 border border-white/5">
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-sm font-medium text-zinc-200">{role.name}</span>
-                        <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] text-zinc-500 hover:text-zinc-300 hover:bg-white/10 uppercase tracking-wider font-semibold">
-                          Edit
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeTeamRole(selectedTeam.id, role.id)}
+                          className="h-6 px-2 text-[10px] text-zinc-500 hover:text-red-300 hover:bg-red-500/10 uppercase tracking-wider font-semibold"
+                        >
+                          Delete
                         </Button>
                       </div>
                       <div className="flex flex-wrap gap-2">
@@ -232,6 +313,11 @@ export function TeamsWorkspace() {
                       </div>
                     </div>
                   ))}
+                  {selectedTeam.roles.length === 0 && (
+                    <div className="rounded-xl border border-dashed border-white/10 p-4 text-sm text-zinc-500">
+                      No roles added.
+                    </div>
+                  )}
                 </div>
               </section>
 

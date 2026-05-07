@@ -19,7 +19,7 @@ export function AppShell() {
          <div className="absolute top-[-10%] right-[5%] w-[800px] h-[800px] rounded-full bg-purple-500/10 blur-[130px]" />
          <div className="absolute bottom-[-15%] right-[15%] w-[600px] h-[600px] rounded-full bg-emerald-500/10 blur-[120px]" />
          <div className="absolute top-[40%] left-[20%] w-[500px] h-[500px] rounded-full bg-zinc-700/10 blur-[100px]" />
-         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] mix-blend-overlay" />
+         <div className="absolute inset-0 kevlar-noise opacity-[0.03] mix-blend-overlay" />
       </div>
 
       <div className="w-[260px] flex-shrink-0 bg-[#161618] flex flex-col border-r border-white/[0.04] z-20 relative shadow-[4px_0_24px_rgba(0,0,0,0.4)]">
@@ -52,7 +52,7 @@ export function AppShell() {
          <div className="absolute inset-0 border-l border-white/[0.15] pointer-events-none z-50 mix-blend-plus-lighter" />
          <div className="absolute top-0 left-0 w-full h-[1.5px] bg-gradient-to-r from-white/[0.4] to-transparent pointer-events-none z-50 mix-blend-plus-lighter" />
          
-         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.06] mix-blend-overlay pointer-events-none z-0" />
+         <div className="absolute inset-0 kevlar-noise opacity-[0.06] mix-blend-overlay pointer-events-none z-0" />
          
          <div className="relative z-10 flex flex-col w-full h-full">
             <SidebarRight 

@@ -1,6 +1,6 @@
 {
-  "name": "Kevlar Agent Orchestration",
-  "description": "Desktop-styled agent orchestration web app with a side-car interface for assisting in team builds.",
+  "name": "Kevlar Codex Desktop",
+  "description": "Local-first Electron desktop app for Codex CLI project chats, task tracking, and Side-Car notes.",
   "requestFramePermissions": [],
   "majorCapabilities": []
 }

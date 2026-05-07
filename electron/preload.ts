@@ -34,6 +34,10 @@ const api: KevlarApi = {
     list: () => ipcRenderer.invoke('teams:list'),
     create: (input) => ipcRenderer.invoke('teams:create', input),
     updateProfile: (input) => ipcRenderer.invoke('teams:updateProfile', input),
+    addMember: (input) => ipcRenderer.invoke('teams:addMember', input),
+    removeMember: (input) => ipcRenderer.invoke('teams:removeMember', input),
+    addRole: (input) => ipcRenderer.invoke('teams:addRole', input),
+    removeRole: (input) => ipcRenderer.invoke('teams:removeRole', input),
     remove: (id) => ipcRenderer.invoke('teams:remove', id),
   },
   agent: {
@@ -45,6 +49,7 @@ const api: KevlarApi = {
     cards: (chatId) => ipcRenderer.invoke('sidecar:cards', chatId),
     run: (chatId) => ipcRenderer.invoke('sidecar:run', chatId),
     promote: (cardId) => ipcRenderer.invoke('sidecar:promote', cardId),
+    clear: (chatId) => ipcRenderer.invoke('sidecar:clear', chatId),
   },
   onAgentEvent: (listener) => {
     const wrapped = (_event: Electron.IpcRendererEvent, payload: AgentStreamEvent) => listener(payload);

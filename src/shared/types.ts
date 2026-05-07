@@ -207,6 +207,10 @@ export interface KevlarApi {
     list(): Promise<Team[]>;
     create(input: {name: string; description: string}): Promise<Team>;
     updateProfile(input: {id: string; name: string; description: string}): Promise<Team>;
+    addMember(input: {teamId: string; name: string; role: string}): Promise<Team>;
+    removeMember(input: {teamId: string; agentId: string}): Promise<Team>;
+    addRole(input: {teamId: string; name: string; permissions: string[]}): Promise<Team>;
+    removeRole(input: {teamId: string; roleId: string}): Promise<Team>;
     remove(id: string): Promise<{removed: boolean}>;
   };
   agent: {
@@ -218,6 +222,7 @@ export interface KevlarApi {
     cards(chatId: string): Promise<SideCarCard[]>;
     run(chatId: string): Promise<SideCarCard[]>;
     promote(cardId: string): Promise<Message>;
+    clear(chatId: string): Promise<{removed: number}>;
   };
   onAgentEvent(listener: (event: AgentStreamEvent) => void): () => void;
 }

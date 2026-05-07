@@ -8,7 +8,6 @@ import {
   Plus, 
   ChevronDown,
   SquarePen,
-  Filter,
   LayoutDashboard,
   Users,
   Trash2
@@ -39,7 +38,7 @@ export function SidebarLeft({ currentView, setCurrentView, activeChatId, setActi
   const filteredChats = chats.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
   const handleNewChat = async () => {
-    const newChatId = await createChat("New Chat");
+    const newChatId = await createChat("New Chat", activeProjectId);
     if (newChatId) {
       setActiveChatId(newChatId);
       setCurrentView('chat');
@@ -138,9 +137,6 @@ export function SidebarLeft({ currentView, setCurrentView, activeChatId, setActi
         <div className="mb-6">
           <div className="flex items-center justify-between px-2 py-1 text-xs font-semibold text-zinc-500 uppercase tracking-widest mt-2 mb-1">
             <span>Chats</span>
-          <div className="flex items-center gap-1.5 opacity-60 hover:opacity-100 cursor-pointer transition-opacity">
-            <Filter className="w-3.5 h-3.5" />
-          </div>
           </div>
           
           <div className="flex flex-col gap-[1px]">
@@ -152,6 +148,7 @@ export function SidebarLeft({ currentView, setCurrentView, activeChatId, setActi
                 active={currentView === 'chat' && activeChatId === chat.id}
                 onClick={() => {
                   setActiveChatId(chat.id);
+                  setActiveProjectId(chat.projectId);
                   setCurrentView('chat');
                 }}
                 onRename={(name) => updateChatName(chat.id, name)}
@@ -194,6 +191,7 @@ function NavItem({ icon, label, active, onClick }: { icon: React.ReactNode, labe
 function ProjectItem({ label, time, active, isSub, onClick, onRename, onDelete }: { label: string, time?: string, active?: boolean, isSub?: boolean, onClick?: () => void, onRename?: (name: string) => void, onDelete?: () => void, key?: React.Key }) {
   const [isEditing, setIsEditing] = React.useState(false);
   const [editValue, setEditValue] = React.useState(label);
+  const [deleteArmed, setDeleteArmed] = React.useState(false);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -246,11 +244,13 @@ function ProjectItem({ label, time, active, isSub, onClick, onRename, onDelete }
             <Trash2 
               onClick={(e) => { 
                 e.stopPropagation(); 
-                if(confirm('Are you sure you want to delete this project?')) {
-                  onDelete(); 
+                if (deleteArmed) {
+                  onDelete();
+                } else {
+                  setDeleteArmed(true);
                 }
               }}
-              className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 hover:text-red-400 text-zinc-400 block ml-0.5"
+              className={`w-3.5 h-3.5 group-hover:opacity-100 hover:text-red-400 block ml-0.5 ${deleteArmed ? 'opacity-100 text-red-400' : 'opacity-0 text-zinc-400'}`}
             />
           )}
           {time && <span className="text-[10px] text-zinc-600">{time}</span>}
@@ -264,6 +264,7 @@ function ProjectItem({ label, time, active, isSub, onClick, onRename, onDelete }
 function ChatItem({ label, time, active, onClick, onRename, onDelete }: { label: string, time?: string, active?: boolean, onClick?: () => void, onRename?: (name: string) => void, onDelete?: () => void, key?: React.Key }) {
   const [isEditing, setIsEditing] = React.useState(false);
   const [editValue, setEditValue] = React.useState(label);
+  const [deleteArmed, setDeleteArmed] = React.useState(false);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -311,11 +312,13 @@ function ChatItem({ label, time, active, onClick, onRename, onDelete }: { label:
             <Trash2 
               onClick={(e) => { 
                 e.stopPropagation(); 
-                if(confirm('Are you sure you want to delete this chat?')) {
-                  onDelete(); 
+                if (deleteArmed) {
+                  onDelete();
+                } else {
+                  setDeleteArmed(true);
                 }
               }}
-              className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 hover:text-red-400 text-zinc-400 ml-0.5 block"
+              className={`w-3.5 h-3.5 group-hover:opacity-100 hover:text-red-400 ml-0.5 block ${deleteArmed ? 'opacity-100 text-red-400' : 'opacity-0 text-zinc-400'}`}
             />
           )}
           {active ? (

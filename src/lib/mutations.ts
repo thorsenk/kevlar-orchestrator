@@ -73,6 +73,22 @@ export async function updateTeamProfile(teamId: string, name: string, descriptio
   return window.kevlar.teams.updateProfile({id: teamId, name, description});
 }
 
+export async function addTeamMember(teamId: string, name: string, role: string) {
+  return window.kevlar.teams.addMember({teamId, name, role});
+}
+
+export async function removeTeamMember(teamId: string, agentId: string) {
+  return window.kevlar.teams.removeMember({teamId, agentId});
+}
+
+export async function addTeamRole(teamId: string, name: string, permissions: string[]) {
+  return window.kevlar.teams.addRole({teamId, name, permissions});
+}
+
+export async function removeTeamRole(teamId: string, roleId: string) {
+  return window.kevlar.teams.removeRole({teamId, roleId});
+}
+
 export async function updateTaskTitle(taskId: string, title: string) {
   return window.kevlar.tasks.updateTitle({id: taskId, title});
 }
@@ -83,4 +99,8 @@ export async function runSideCar(chatId: string) {
 
 export async function promoteSideCarCard(cardId: string) {
   return window.kevlar.sideCar.promote(cardId);
+}
+
+export async function clearSideCarCards(chatId: string) {
+  return window.kevlar.sideCar.clear(chatId);
 }

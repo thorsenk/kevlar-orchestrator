@@ -4,7 +4,10 @@ import path from 'node:path';
 import type {AgentStreamEvent, MessageRole, TaskStatus} from '../src/shared/types';
 import {getCodexStatus, CodexCliService} from './codex';
 import {
+  addTeamMember,
+  addTeamRole,
   appendMessage,
+  clearSideCarCards,
   createChat,
   createProject,
   createTask,
@@ -18,6 +21,8 @@ import {
   promoteSideCarCard,
   removeChat,
   removeProject,
+  removeTeamMember,
+  removeTeamRole,
   removeTask,
   removeTeam,
   touchProject,
@@ -67,6 +72,8 @@ export function registerIpc(): void {
   ipcMain.handle('projects:remove', (_event, id: string) => {
     const result = removeProject(id);
     emit({type: 'data_changed', scope: 'projects'});
+    emit({type: 'data_changed', scope: 'chats'});
+    emit({type: 'data_changed', scope: 'tasks'});
     return result;
   });
   ipcMain.handle('projects:touch', (_event, id: string) => {
@@ -142,6 +149,26 @@ export function registerIpc(): void {
     emit({type: 'data_changed', scope: 'teams'});
     return team;
   });
+  ipcMain.handle('teams:addMember', (_event, input: {teamId: string; name: string; role: string}) => {
+    const team = addTeamMember(input.teamId, {name: input.name, role: input.role});
+    emit({type: 'data_changed', scope: 'teams'});
+    return team;
+  });
+  ipcMain.handle('teams:removeMember', (_event, input: {teamId: string; agentId: string}) => {
+    const team = removeTeamMember(input.teamId, input.agentId);
+    emit({type: 'data_changed', scope: 'teams'});
+    return team;
+  });
+  ipcMain.handle('teams:addRole', (_event, input: {teamId: string; name: string; permissions: string[]}) => {
+    const team = addTeamRole(input.teamId, {name: input.name, permissions: input.permissions});
+    emit({type: 'data_changed', scope: 'teams'});
+    return team;
+  });
+  ipcMain.handle('teams:removeRole', (_event, input: {teamId: string; roleId: string}) => {
+    const team = removeTeamRole(input.teamId, input.roleId);
+    emit({type: 'data_changed', scope: 'teams'});
+    return team;
+  });
   ipcMain.handle('teams:remove', (_event, id: string) => {
     const result = removeTeam(id);
     emit({type: 'data_changed', scope: 'teams'});
@@ -159,7 +186,13 @@ export function registerIpc(): void {
   ipcMain.handle('sidecar:promote', (_event, cardId: string) => {
     const message = promoteSideCarCard(cardId);
     emit({type: 'data_changed', scope: 'messages', chatId: message.chatId});
+    emit({type: 'data_changed', scope: 'chats'});
     emit({type: 'data_changed', scope: 'sidecar', chatId: message.chatId});
     return message;
+  });
+  ipcMain.handle('sidecar:clear', (_event, chatId: string) => {
+    const result = clearSideCarCards(chatId);
+    emit({type: 'data_changed', scope: 'sidecar', chatId});
+    return result;
   });
 }

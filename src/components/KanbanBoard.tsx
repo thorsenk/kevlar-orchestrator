@@ -118,10 +118,11 @@ export function KanbanBoard({ onTaskClick, activeProjectId }: KanbanBoardProps) 
           </button>
           <button
             onClick={() => setViewScope('Local')}
+            disabled={!activeProjectId}
             className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
               viewScope === 'Local'
                 ? 'bg-white/10 text-white shadow-sm'
-                : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+                : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5 disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-zinc-500'
             }`}
           >
             Local
@@ -147,10 +148,15 @@ export function KanbanBoard({ onTaskClick, activeProjectId }: KanbanBoardProps) 
 
               {/* Column Body */}
               <div className="flex-1 p-3 overflow-y-auto flex flex-col gap-3 custom-scrollbar">
+                {viewScope === 'Local' && !activeProjectId && (
+                  <div className="flex-1 flex items-center justify-center text-center text-xs text-zinc-600 font-medium border-2 border-dashed border-white/5 rounded-lg px-4">
+                    Select a project to see local tasks
+                  </div>
+                )}
                 {columnTasks.map(task => (
                   <TaskCard key={task.id} task={task} onClick={onTaskClick} />
                 ))}
-                {columnTasks.length === 0 && (
+                {columnTasks.length === 0 && (viewScope === 'Global' || activeProjectId) && (
                   <div className="flex-1 flex items-center justify-center text-xs text-zinc-600 font-medium border-2 border-dashed border-white/5 rounded-lg">
                     No tasks
                   </div>
