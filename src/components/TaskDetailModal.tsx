@@ -79,6 +79,7 @@ export function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
               <div className="flex items-center gap-2 mt-1">
                  <input
                    autoFocus
+                   aria-label="Task title"
                    value={editTitleValue}
                    onChange={(e) => setEditTitleValue(e.target.value)}
                    onKeyDown={(e) => {
@@ -93,6 +94,7 @@ export function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
               <div className="flex items-center gap-2 mt-1 group">
                  <h2 className="text-lg font-medium text-zinc-100 truncate">{task.title}</h2>
                  <Button onClick={() => setIsEditingTitle(true)} variant="ghost" size="icon" className="h-5 w-5 opacity-0 group-hover:opacity-100 shrink-0 text-zinc-500 hover:text-zinc-300">
+                   <span className="sr-only">Rename task {task.title}</span>
                    <SquarePen className="w-3.5 h-3.5" />
                  </Button>
               </div>
@@ -101,6 +103,7 @@ export function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
           <Button
             variant="ghost"
             size="icon"
+            aria-label="Close task details"
             onClick={onClose}
             className="h-8 w-8 rounded-full text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
           >
@@ -118,6 +121,7 @@ export function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
                   key={status}
                   onClick={() => handleSetStatus(status)}
                   disabled={task.status === status}
+                  aria-label={`Set task status ${status}`}
                   size="sm"
                   variant="outline"
                   className="h-8 bg-white/5 border-white/10 text-zinc-300 hover:bg-white/10 hover:text-white disabled:opacity-50"

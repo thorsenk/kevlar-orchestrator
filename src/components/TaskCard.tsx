@@ -43,6 +43,9 @@ export function TaskCard({ task, onClick }: TaskCardProps) {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <div 
+              role="button"
+              tabIndex={0}
+              aria-label={`Assign agent for task ${task.title}`}
               onClick={(e) => e.stopPropagation()}
               className="flex items-center gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-white/10"
             >

@@ -215,6 +215,7 @@ function ProjectItem({ label, time, active, isSub, onClick, onRename, onDelete }
         {isEditing ? (
           <input
             autoFocus
+            aria-label={`Project name for ${label}`}
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -282,6 +283,7 @@ function ChatItem({ label, time, active, onClick, onRename, onDelete }: { label:
         {isEditing ? (
           <input
             autoFocus
+            aria-label={`Chat name for ${label}`}
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             onKeyDown={handleKeyDown}

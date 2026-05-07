@@ -56,6 +56,7 @@ export function KanbanBoard({ onTaskClick, activeProjectId }: KanbanBoardProps) 
             {isEditingTitle && viewScope === 'Local' && activeProject ? (
                <input
                  autoFocus
+                 aria-label="Project board title"
                  value={editTitleValue}
                  onChange={(e) => setEditTitleValue(e.target.value)}
                  onKeyDown={(e) => {
@@ -86,6 +87,7 @@ export function KanbanBoard({ onTaskClick, activeProjectId }: KanbanBoardProps) 
                    <Button 
                      variant="ghost" 
                      size="icon" 
+                     aria-label={`Rename active project ${activeProject.name}`}
                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-zinc-500 hover:text-zinc-300"
                      onClick={() => {
                        setIsEditingTitle(true);
@@ -108,6 +110,7 @@ export function KanbanBoard({ onTaskClick, activeProjectId }: KanbanBoardProps) 
         <div className="flex bg-black/40 backdrop-blur-md border border-white/5 p-1 rounded-lg">
           <button
             onClick={() => setViewScope('Global')}
+            aria-label="Show global tasks"
             className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
               viewScope === 'Global'
                 ? 'bg-white/10 text-white shadow-sm'
@@ -119,6 +122,7 @@ export function KanbanBoard({ onTaskClick, activeProjectId }: KanbanBoardProps) 
           <button
             onClick={() => setViewScope('Local')}
             disabled={!activeProjectId}
+            aria-label="Show local tasks"
             className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
               viewScope === 'Local'
                 ? 'bg-white/10 text-white shadow-sm'

@@ -67,6 +67,14 @@ export function TeamsWorkspace() {
     setIsEditing(false);
   };
 
+  const handleCancelEdit = () => {
+    if (selectedTeam) {
+      setEditName(selectedTeam.name);
+      setEditDesc(selectedTeam.description);
+    }
+    setIsEditing(false);
+  };
+
   const handleAddMember = async () => {
     if (!selectedTeam || !memberName.trim()) return;
     await addTeamMember(selectedTeam.id, memberName.trim(), memberRole.trim() || 'Contributor');
@@ -150,12 +158,14 @@ export function TeamsWorkspace() {
                     <div className="flex flex-col gap-2">
                        <input
                          autoFocus
+                         aria-label="Team name"
                          value={editName}
                          onChange={(e) => setEditName(e.target.value)}
                          className="text-2xl font-medium tracking-tight bg-zinc-900 border border-zinc-700 text-zinc-100 px-2 py-0.5 rounded focus:outline-none w-full max-w-md"
                          placeholder="Team Name"
                        />
                        <textarea
+                         aria-label="Team description"
                          value={editDesc}
                          onChange={(e) => setEditDesc(e.target.value)}
                          className="text-sm text-zinc-300 leading-relaxed bg-zinc-900 border border-zinc-700 px-2 py-1 rounded focus:outline-none w-full max-w-2xl resize-none h-20"
@@ -163,7 +173,7 @@ export function TeamsWorkspace() {
                        />
                        <div className="flex gap-2 mt-2">
                          <Button onClick={handleSaveEdit} size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white h-7 text-xs">Save</Button>
-                         <Button onClick={() => setIsEditing(false)} size="sm" variant="ghost" className="h-7 text-xs text-zinc-400 hover:text-white">Cancel</Button>
+                         <Button onClick={handleCancelEdit} size="sm" variant="ghost" className="h-7 text-xs text-zinc-400 hover:text-white">Cancel</Button>
                        </div>
                     </div>
                   ) : (
@@ -176,7 +186,7 @@ export function TeamsWorkspace() {
                 {!isEditing && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="bg-white/5 border-white/10 text-zinc-300 hover:bg-white/10 hover:text-white">
+                      <Button variant="outline" aria-label="Open team settings" className="bg-white/5 border-white/10 text-zinc-300 hover:bg-white/10 hover:text-white">
                         <Settings2 className="w-4 h-4 mr-2" />
                         Settings
                       </Button>
@@ -299,6 +309,7 @@ export function TeamsWorkspace() {
                           variant="ghost"
                           size="sm"
                           onClick={() => removeTeamRole(selectedTeam.id, role.id)}
+                          aria-label={`Delete role ${role.name}`}
                           className="h-6 px-2 text-[10px] text-zinc-500 hover:text-red-300 hover:bg-red-500/10 uppercase tracking-wider font-semibold"
                         >
                           Delete

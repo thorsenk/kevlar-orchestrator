@@ -177,6 +177,7 @@ export function MainWorkspace({ currentView, setCurrentView, activeChatId, setAc
                  {isEditingChatName ? (
                    <input
                      autoFocus
+                     aria-label="Chat name"
                      value={editChatNameValue}
                      onChange={(e) => setEditChatNameValue(e.target.value)}
                      onKeyDown={(e) => {
@@ -204,6 +205,7 @@ export function MainWorkspace({ currentView, setCurrentView, activeChatId, setAc
                      <Button 
                        variant="ghost" 
                        size="icon" 
+                       aria-label={`Rename active chat ${chat?.name ?? ''}`}
                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-zinc-500 hover:text-zinc-300"
                        onClick={() => {
                          if (!chat) return;
@@ -219,6 +221,7 @@ export function MainWorkspace({ currentView, setCurrentView, activeChatId, setAc
                <div className="flex items-center gap-2">
                  <div className="text-sm text-zinc-400 font-medium">Project:</div>
                  <select 
+                   aria-label="Chat project"
                    className="bg-[#18181A] border border-zinc-800 text-sm text-zinc-200 rounded-md py-1 px-2 focus:outline-none"
                    value={chat?.projectId || ""}
                    onChange={(e) => {
@@ -403,7 +406,7 @@ export function MainWorkspace({ currentView, setCurrentView, activeChatId, setAc
           <div className="flex items-center justify-between mt-1">
             <div className="flex items-center gap-2">
               <DropdownMenu>
-                <DropdownMenuTrigger className="inline-flex items-center justify-center h-8 w-8 rounded-full text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50">
+                <DropdownMenuTrigger aria-label="Open start actions" className="inline-flex items-center justify-center h-8 w-8 rounded-full text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50">
                   <Plus className="w-5 h-5" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="start">
@@ -438,16 +441,34 @@ export function MainWorkspace({ currentView, setCurrentView, activeChatId, setAc
                   </DropdownMenuSub>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <Button variant="outline" size="sm" className="h-8 bg-zinc-900/40 border-zinc-800/60 text-zinc-300 hover:text-white rounded-full gap-2 px-3 font-normal">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" aria-label="Select start project" className="h-8 bg-zinc-900/40 border-zinc-800/60 text-zinc-300 hover:text-white rounded-full gap-2 px-3 font-normal">
+                    <Folder className="w-3.5 h-3.5" />
+                    {selectedProject?.name ?? 'No project'} <ChevronDown className="w-3.5 h-3.5 opacity-60 ml-[-2px]" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="start">
+                  <DropdownMenuItem onClick={() => setActiveProjectId(null)}>
+                    None
+                  </DropdownMenuItem>
+                  {projects.map(p => (
+                    <DropdownMenuItem key={p.id} onClick={() => setActiveProjectId(p.id)}>
+                      {p.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <div className="h-8 inline-flex items-center gap-1 rounded-full px-3 text-sm text-zinc-400 bg-zinc-900/30 border border-zinc-800/50">
                 <Folder className="w-3.5 h-3.5" />
-                {selectedProject?.name ?? 'No project'} <ChevronDown className="w-3.5 h-3.5 opacity-60 ml-[-2px]" />
-              </Button>
+                Local
+              </div>
             </div>
             
             <div className="flex items-center gap-1">
-              <Button variant="ghost" size="sm" className="h-8 text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800 font-normal px-2">
-                Codex gpt-5.2 <ChevronDown className="w-3.5 h-3.5 opacity-60 ml-1" />
-              </Button>
+              <div className="h-8 inline-flex items-center rounded-full px-2 text-sm text-zinc-400">
+                Codex gpt-5.2
+              </div>
               <Button
                 onClick={handleSendMessage}
                 disabled={!canSend}

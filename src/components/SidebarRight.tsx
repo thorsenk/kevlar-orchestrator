@@ -68,8 +68,8 @@ export function SidebarRight({
   };
 
   const handleSendToPrimary = async () => {
-    if (!activeChatId || cards.length === 0) return;
-    await handlePromoteCard(cards[0].id);
+    if (!activeChatId || visibleCards.length === 0) return;
+    await handlePromoteCard(visibleCards[0].id);
   };
 
   const handlePromoteCard = async (cardId: string) => {
@@ -139,7 +139,7 @@ export function SidebarRight({
              </Button>
           </div>
           
-          <Button onClick={handleClearCards} disabled={!activeChatId || cards.length === 0} variant="ghost" size="sm" className="h-8 text-[11px] font-medium text-white/50 border border-white/[0.04] bg-white/[0.02] hover:bg-white/[0.06] hover:text-white/90 rounded-xl transition-all mix-blend-plus-lighter px-2.5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] disabled:opacity-40">
+          <Button onClick={handleClearCards} disabled={!activeChatId || cards.length === 0} variant="ghost" size="sm" aria-label="Clear Side-Car history" className="h-8 text-[11px] font-medium text-white/50 border border-white/[0.04] bg-white/[0.02] hover:bg-white/[0.06] hover:text-white/90 rounded-xl transition-all mix-blend-plus-lighter px-2.5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] disabled:opacity-40">
             <Trash2 className="w-3 h-3 mr-1.5" />
             Clear History
           </Button>
@@ -178,7 +178,8 @@ export function SidebarRight({
           </Button>
           <Button 
             onClick={handleSendToPrimary}
-            disabled={!activeChatId || cards.length === 0 || isSending}
+            disabled={!activeChatId || visibleCards.length === 0 || isSending}
+            aria-label={`Send visible ${activeSubTab} Side-Car card to primary chat`}
             className="flex-1 bg-white/[0.08] hover:bg-white/[0.12] text-white border border-white/[0.12] shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_4px_12px_rgba(0,0,0,0.2)] font-medium h-10 rounded-xl transition-all duration-300 mix-blend-plus-lighter"
           >
             <Share className="w-4 h-4 mr-2" />

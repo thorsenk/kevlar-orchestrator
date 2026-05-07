@@ -20,7 +20,8 @@
     "test": "vitest",
     "pretest:run": "npm run rebuild:native:node",
     "test:run": "vitest run",
-    "smoke:electron": "npm run rebuild:native:electron && npm run package && node script/electron_smoke.mjs"
+    "smoke:electron": "npm run rebuild:native:electron && npm run package && node script/electron_smoke.mjs",
+    "audit:frontend": "npm run rebuild:native:electron && npm run package && node script/frontend_audit.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
