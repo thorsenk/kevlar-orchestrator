@@ -1,105 +1,116 @@
-import { useEffect, useState } from 'react';
-import { collection, onSnapshot, query, where, Timestamp } from 'firebase/firestore';
-import { db } from './firebase';
-import { useAuth } from './auth';
-import { handleFirestoreError, OperationType } from './error';
+import {useCallback, useEffect, useState} from 'react';
+import type {AgentRunState, Chat, CodexStatus, Message, Project, Task, Team} from '@/shared/types';
 
-export function useProjects() {
-  const { user } = useAuth();
-  const [projects, setProjects] = useState<any[]>([]);
+type DataScope = 'projects' | 'chats' | 'messages' | 'tasks' | 'teams' | 'sidecar' | 'settings' | 'runs';
+
+function useRemoteList<T>(
+  loader: () => Promise<T[]>,
+  scopes: DataScope[],
+  chatId?: string | null,
+): T[] {
+  const [items, setItems] = useState<T[]>([]);
+  const scopeKey = scopes.join('|');
+
+  const refresh = useCallback(() => {
+    loader().then(setItems).catch((error) => {
+      console.error(error);
+      setItems([]);
+    });
+  }, [loader]);
 
   useEffect(() => {
-    if (!user) return;
-    const q = query(collection(db, 'projects'), where('ownerId', '==', user.uid));
-    const unsub = onSnapshot(q, (snap) => {
-      setProjects(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    }, (err) => {
-      handleFirestoreError(err, OperationType.LIST, 'projects');
+    refresh();
+    return window.kevlar.onAgentEvent((event) => {
+      if (event.type !== 'data_changed') return;
+      if (!scopes.includes(event.scope)) return;
+      if (chatId && event.chatId && event.chatId !== chatId) return;
+      refresh();
     });
-    return unsub;
-  }, [user]);
+  }, [chatId, refresh, scopeKey]);
 
-  return projects;
+  return items;
 }
 
-export function useChats() {
-  const { user } = useAuth();
-  const [chats, setChats] = useState<any[]>([]);
-
-  useEffect(() => {
-    if (!user) return;
-    const q = query(collection(db, 'chats'), where('ownerId', '==', user.uid));
-    const unsub = onSnapshot(q, (snap) => {
-      setChats(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    }, (err) => {
-      handleFirestoreError(err, OperationType.LIST, 'chats');
-    });
-    return unsub;
-  }, [user]);
-
-  return chats;
+export function useProjects(): Project[] {
+  const loader = useCallback(() => window.kevlar.projects.list(), []);
+  return useRemoteList(loader, ['projects']);
 }
 
-export function useTasks() {
-  const { user } = useAuth();
-  const [tasks, setTasks] = useState<any[]>([]);
-
-  useEffect(() => {
-    if (!user) return;
-    const q = query(collection(db, 'tasks'), where('ownerId', '==', user.uid));
-    const unsub = onSnapshot(q, (snap) => {
-      setTasks(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    }, (err) => {
-      handleFirestoreError(err, OperationType.LIST, 'tasks');
-    });
-    return unsub;
-  }, [user]);
-
-  return tasks;
+export function useChats(): Chat[] {
+  const loader = useCallback(() => window.kevlar.chats.list(), []);
+  return useRemoteList(loader, ['chats', 'messages']);
 }
 
-export function useTeams() {
-  const { user } = useAuth();
-  const [teams, setTeams] = useState<any[]>([]);
-
-  useEffect(() => {
-    if (!user) return;
-    const q = query(collection(db, 'teams'), where('ownerId', '==', user.uid));
-    const unsub = onSnapshot(q, (snap) => {
-      setTeams(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    }, (err) => {
-      handleFirestoreError(err, OperationType.LIST, 'teams');
-    });
-    return unsub;
-  }, [user]);
-
-  return teams;
+export function useMessages(chatId: string | null): Message[] {
+  const loader = useCallback(() => (chatId ? window.kevlar.chats.messages(chatId) : Promise.resolve([])), [chatId]);
+  return useRemoteList(loader, ['messages'], chatId);
 }
 
-export function useMessages(chatId: string | null) {
-  const { user } = useAuth();
-  const [messages, setMessages] = useState<any[]>([]);
+export function useTasks(): Task[] {
+  const loader = useCallback(() => window.kevlar.tasks.list(), []);
+  return useRemoteList(loader, ['tasks']);
+}
+
+export function useTeams(): Team[] {
+  const loader = useCallback(() => window.kevlar.teams.list(), []);
+  return useRemoteList(loader, ['teams']);
+}
+
+export function useCodexStatus(): CodexStatus | null {
+  const [status, setStatus] = useState<CodexStatus | null>(null);
+
+  const refresh = useCallback(() => {
+    window.kevlar.codex.status().then(setStatus).catch((error) => {
+      console.error(error);
+      setStatus({
+        ok: false,
+        cliPath: null,
+        version: null,
+        loginStatus: null,
+        defaultModel: 'gpt-5.2',
+        defaultSandboxMode: 'workspace-write',
+        warnings: [],
+        errors: [error instanceof Error ? error.message : String(error)],
+      });
+    });
+  }, []);
 
   useEffect(() => {
-    if (!user || !chatId) {
-      setMessages([]);
+    refresh();
+    return window.kevlar.onAgentEvent((event) => {
+      if (event.type === 'data_changed' && event.scope === 'settings') refresh();
+    });
+  }, [refresh]);
+
+  return status;
+}
+
+export function useAgentRunState(chatId: string | null): AgentRunState | null {
+  const [state, setState] = useState<AgentRunState | null>(null);
+
+  const refresh = useCallback(() => {
+    if (!chatId) {
+      setState(null);
       return;
     }
-    // we normally want to order by createdAt, but requires an index.
-    const q = query(collection(db, `chats/${chatId}/messages`));
-    const unsub = onSnapshot(q, (snap) => {
-      const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      msgs.sort((a: any, b: any) => {
-        const t1 = a.createdAt?.toMillis() || 0;
-        const t2 = b.createdAt?.toMillis() || 0;
-        return t1 - t2;
-      });
-      setMessages(msgs);
-    }, (err) => {
-      handleFirestoreError(err, OperationType.LIST, `chats/${chatId}/messages`);
+    window.kevlar.agent.runState(chatId).then(setState).catch((error) => {
+      console.error(error);
+      setState({chatId, status: 'failed', error: error instanceof Error ? error.message : String(error)});
     });
-    return unsub;
-  }, [user, chatId]);
+  }, [chatId]);
 
-  return messages;
+  useEffect(() => {
+    refresh();
+    return window.kevlar.onAgentEvent((event) => {
+      if (event.type === 'run_state' && event.state.chatId === chatId) {
+        setState(event.state);
+        return;
+      }
+      if (event.type === 'data_changed' && event.scope === 'runs' && (!event.chatId || event.chatId === chatId)) {
+        refresh();
+      }
+    });
+  }, [chatId, refresh]);
+
+  return state;
 }

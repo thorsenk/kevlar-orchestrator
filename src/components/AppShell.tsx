@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { SidebarLeft } from "./SidebarLeft";
-import { MainWorkspace } from "./MainWorkspace";
-import { SidebarRight } from "./SidebarRight";
+import {useState} from "react";
+import {MainWorkspace} from "./MainWorkspace";
+import {Settings} from "./Settings";
+import {SidebarLeft} from "./SidebarLeft";
+import {SidebarRight} from "./SidebarRight";
 
 export type ViewState = 'chat' | 'board' | 'teams' | 'plugins' | 'automations';
 
@@ -9,6 +10,7 @@ export function AppShell() {
   const [currentView, setCurrentView] = useState<ViewState>('chat');
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
     <div className="h-screen w-full bg-[#0F0F11] font-sans overflow-hidden text-foreground relative z-0 flex">
@@ -28,6 +30,7 @@ export function AppShell() {
           setActiveChatId={setActiveChatId}
           activeProjectId={activeProjectId}
           setActiveProjectId={setActiveProjectId}
+          onOpenSettings={() => setSettingsOpen(true)}
         />
       </div>
 
@@ -59,6 +62,7 @@ export function AppShell() {
             />
          </div>
       </div>
+      {settingsOpen && <Settings onClose={() => setSettingsOpen(false)} />}
     </div>
   );
 }

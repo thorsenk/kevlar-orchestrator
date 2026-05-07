@@ -25,8 +25,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
-import { sendMessage, createChat } from "@/lib/mutations";
+import {promoteSideCarCard, runSideCar} from "@/lib/mutations";
 import type { ViewState } from "./AppShell";
+import type {SideCarCard as SideCarCardType} from "@/shared/types";
 
 export function SidebarRight({ 
   activeChatId, 
@@ -40,34 +41,48 @@ export function SidebarRight({
   const [activePrimaryTab, setActivePrimaryTab] = React.useState('Capture');
   const [activeSubTab, setActiveSubTab] = React.useState('Meeting Notes');
   const [isSending, setIsSending] = React.useState(false);
+  const [isRunning, setIsRunning] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const [cards, setCards] = React.useState<SideCarCardType[]>([]);
+
+  React.useEffect(() => {
+    if (!activeChatId) {
+      setCards([]);
+      return;
+    }
+    window.kevlar.sideCar.cards(activeChatId).then(setCards).catch(console.error);
+    return window.kevlar.onAgentEvent((event) => {
+      if (event.type === 'data_changed' && event.scope === 'sidecar' && event.chatId === activeChatId) {
+        window.kevlar.sideCar.cards(activeChatId).then(setCards).catch(console.error);
+      }
+    });
+  }, [activeChatId]);
+
+  const handleRunSideCar = async () => {
+    if (!activeChatId || isRunning) return;
+    setIsRunning(true);
+    setError(null);
+    try {
+      setCards(await runSideCar(activeChatId));
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsRunning(false);
+    }
+  };
 
   const handleSendToPrimary = async () => {
+    if (!activeChatId || cards.length === 0) return;
     try {
       setIsSending(true);
-      let targetChatId = activeChatId;
-      if (!targetChatId) {
-        const newChatId = await createChat("Meeting context");
-        if (newChatId) {
-          targetChatId = newChatId;
-          setActiveChatId(newChatId);
-        } else {
-          return;
-        }
-      }
-      
+      setActiveChatId(activeChatId);
       setCurrentView('chat');
-      
-      const payload = `=== Hand-off from Side-Car ===\nTab: ${activeSubTab}\nPayload sent from isolated side-car container.`;
-      
-      await sendMessage(targetChatId, payload, 'user');
-      setTimeout(async () => {
-        if (targetChatId) {
-          await sendMessage(targetChatId, `I received the side-car data for ${activeSubTab}. How would you like to process this context?`, 'assistant');
-        }
-      }, 1000);
+      await promoteSideCarCard(cards[0].id);
 
     } catch (err) {
       console.error(err);
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsSending(false);
     }
@@ -131,21 +146,21 @@ export function SidebarRight({
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-white/90 mix-blend-plus-lighter">{activeSubTab}</h3>
           <div className="flex items-center gap-1.5 opacity-80 mix-blend-plus-lighter">
-             <div className="w-1.5 h-1.5 rounded-full bg-white/60 shadow-[0_0_8px_rgba(255,255,255,0.8)] animate-pulse" />
-            <span className="text-[10px] font-medium text-white/60 uppercase tracking-widest">Live</span>
+             <div className={`w-1.5 h-1.5 rounded-full ${isRunning ? 'bg-sky-300 shadow-[0_0_8px_rgba(125,211,252,0.8)] animate-pulse' : 'bg-white/25'}`} />
+            <span className="text-[10px] font-medium text-white/60 uppercase tracking-widest">{isRunning ? 'Running' : 'Local'}</span>
           </div>
         </div>
 
         {/* Agent Controls */}
         <div className="flex items-center justify-between gap-2 mb-4">
           <div className="flex items-center gap-1 bg-black/20 p-1 rounded-xl border border-white/[0.04] shadow-[inset_0_1px_4px_rgba(0,0,0,0.4)]">
-             <Button variant="ghost" size="icon" className="h-7 w-7 text-white/70 hover:bg-white/[0.1] hover:text-white rounded-lg transition-all mix-blend-plus-lighter" title="Pause">
+             <Button disabled variant="ghost" size="icon" className="h-7 w-7 text-white/30 hover:bg-white/[0.1] hover:text-white rounded-lg transition-all mix-blend-plus-lighter disabled:opacity-40" title="Pause">
                <Pause className="w-3.5 h-3.5" fill="currentColor" />
              </Button>
-             <Button variant="ghost" size="icon" className="h-7 w-7 text-white/70 hover:bg-white/[0.1] hover:text-white rounded-lg transition-all mix-blend-plus-lighter" title="Resume">
+             <Button onClick={handleRunSideCar} disabled={!activeChatId || isRunning} variant="ghost" size="icon" className="h-7 w-7 text-white/70 hover:bg-white/[0.1] hover:text-white rounded-lg transition-all mix-blend-plus-lighter disabled:opacity-40" title="Run Side-Car">
                <Play className="w-3.5 h-3.5" fill="currentColor" />
              </Button>
-             <Button variant="ghost" size="icon" className="h-7 w-7 text-red-400 hover:bg-red-500/20 hover:text-red-300 rounded-lg transition-all mix-blend-plus-lighter" title="Stop">
+             <Button disabled variant="ghost" size="icon" className="h-7 w-7 text-red-400 hover:bg-red-500/20 hover:text-red-300 rounded-lg transition-all mix-blend-plus-lighter disabled:opacity-40" title="Stop">
                <Square className="w-3.5 h-3.5" fill="currentColor" />
              </Button>
           </div>
@@ -157,71 +172,19 @@ export function SidebarRight({
         </div>
 
         <div className="flex flex-col gap-3">
-          {activeSubTab === 'Meeting Notes' && (
-            <>
-              <StreamCard 
-                icon={<FileText className="w-3.5 h-3.5 text-white" />}
-                title="Summary"
-                items={[
-                  "Reviewed Q2 roadmap and priorities",
-                  "Discussed user feedback on onboarding",
-                  "Aligned on resourcing for analytics work"
-                ]}
-              />
-              <StreamCard 
-                icon={<HelpCircle className="w-3.5 h-3.5 text-white" />}
-                title="Open Questions"
-                items={[
-                  "What's the scope for SSO integration?",
-                  "Do we need a dedicated PM for analytics?"
-                ]}
-              />
-            </>
-          )}
-
-          {activeSubTab === 'Decisions' && (
-            <>
-              <StreamCard 
-                icon={<CheckCircle2 className="w-3.5 h-3.5 text-white" />}
-                title="Decisions"
-                items={[
-                  "Ship improvements to onboarding flow",
-                  "Prioritize analytics dashboard MVP",
-                  "Defer legacy data migration"
-                ]}
-              />
-              <StreamCard 
-                icon={<Rocket className="w-3.5 h-3.5 text-white" />}
-                title="Next Steps"
-                items={[
-                  "[ ] Share onboarding designs by Fri",
-                  "[ ] Draft analytics MVP spec",
-                  "[ ] Sync with infra on data pipeline"
-                ]}
-                isTasks
-              />
-            </>
-          )}
-
-          {activeSubTab === 'Timeline' && (
-            <>
-              <StreamCard 
-                icon={<FileText className="w-3.5 h-3.5 text-white" />}
-                title="10:05 AM"
-                items={[
-                  "Meeting started",
-                  "Everyone joined the call"
-                ]}
-              />
-              <StreamCard 
-                icon={<FileText className="w-3.5 h-3.5 text-white" />}
-                title="10:15 AM"
-                items={[
-                  "Discussed Q2 roadmap",
-                  "Agreed on onboarding priorities"
-                ]}
-              />
-            </>
+          {cards.length > 0 ? (
+            cards.map((card) => (
+              <React.Fragment key={card.id}>
+                <StreamCard
+                  icon={iconForKind(card.kind)}
+                  title={card.title}
+                  items={card.content.split('\n').filter(Boolean)}
+                  isTasks={card.kind === 'next_step'}
+                />
+              </React.Fragment>
+            ))
+          ) : (
+            <EmptySideCarState activeChatId={activeChatId} isRunning={isRunning} error={error} />
           )}
         </div>
       </ScrollArea>
@@ -235,7 +198,7 @@ export function SidebarRight({
           </Button>
           <Button 
             onClick={handleSendToPrimary}
-            disabled={isSending}
+            disabled={!activeChatId || cards.length === 0 || isSending}
             className="flex-1 bg-white/[0.08] hover:bg-white/[0.12] text-white border border-white/[0.12] shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_4px_12px_rgba(0,0,0,0.2)] font-medium h-10 rounded-xl transition-all duration-300 mix-blend-plus-lighter"
           >
             <Share className="w-4 h-4 mr-2" />
@@ -250,6 +213,34 @@ export function SidebarRight({
   );
 }
 
+function EmptySideCarState({activeChatId, isRunning, error}: {activeChatId: string | null; isRunning: boolean; error: string | null}) {
+  if (isRunning) {
+    return (
+      <div className="rounded-xl border border-sky-500/20 bg-sky-500/10 p-4 text-sm text-sky-100">
+        Side-Car is reading the current chat with a read-only Codex run.
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 p-4 text-sm text-rose-100">
+        <p className="font-medium">Side-Car run failed</p>
+        <p className="mt-1 text-xs text-rose-200/80 line-clamp-4">{error}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4 text-sm text-white/60">
+      <p className="font-medium text-white/80">{activeChatId ? 'No Side-Car cards yet' : 'No chat selected'}</p>
+      <p className="mt-1 text-xs text-white/45">
+        {activeChatId ? 'Run Side-Car to create local summary, decision, question, and next-step cards.' : 'Open a chat before running Side-Car.'}
+      </p>
+    </div>
+  );
+}
+
 function TabButton({ icon, label, active, onClick }: { icon: React.ReactNode, label: string, active?: boolean, onClick?: () => void }) {
   return (
     <div onClick={onClick} className={`flex flex-col items-center justify-center py-2.5 flex-1 rounded-xl cursor-pointer transition-all duration-300 relative overflow-hidden mix-blend-plus-lighter ${active ? 'bg-white/[0.12] shadow-[0_2px_8px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.1)] text-white' : 'text-white/50 bg-transparent hover:text-white/80 hover:bg-white/[0.04]'}`}>
@@ -257,6 +248,19 @@ function TabButton({ icon, label, active, onClick }: { icon: React.ReactNode, la
       <span className="text-[11px] font-medium leading-none tracking-wide">{label}</span>
       </div>
   );
+}
+
+function iconForKind(kind: SideCarCardType['kind']) {
+  switch (kind) {
+    case 'decision':
+      return <CheckCircle2 className="w-3.5 h-3.5 text-white" />;
+    case 'open_question':
+      return <HelpCircle className="w-3.5 h-3.5 text-white" />;
+    case 'next_step':
+      return <Rocket className="w-3.5 h-3.5 text-white" />;
+    default:
+      return <FileText className="w-3.5 h-3.5 text-white" />;
+  }
 }
 
 function StreamCard({ 

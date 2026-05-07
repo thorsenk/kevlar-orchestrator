@@ -27,9 +27,10 @@ interface SidebarLeftProps {
   setActiveChatId: (id: string | null) => void;
   activeProjectId: string | null;
   setActiveProjectId: (id: string | null) => void;
+  onOpenSettings: () => void;
 }
 
-export function SidebarLeft({ currentView, setCurrentView, activeChatId, setActiveChatId, activeProjectId, setActiveProjectId }: SidebarLeftProps) {
+export function SidebarLeft({ currentView, setCurrentView, activeChatId, setActiveChatId, activeProjectId, setActiveProjectId, onOpenSettings }: SidebarLeftProps) {
   const projects = useProjects();
   const chats = useChats();
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -171,7 +172,7 @@ export function SidebarLeft({ currentView, setCurrentView, activeChatId, setActi
       </ScrollArea>
 
       <div className="p-3 border-t border-zinc-800/40">
-        <NavItem icon={<Settings className="w-4 h-4" />} label="Settings" />
+        <NavItem icon={<Settings className="w-4 h-4" />} label="Settings" onClick={onOpenSettings} />
       </div>
     </div>
   );
