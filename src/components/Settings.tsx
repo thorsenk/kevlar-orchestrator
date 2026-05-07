@@ -33,7 +33,7 @@ export function Settings({onClose}: SettingsProps) {
             <Terminal className="w-4 h-4 text-zinc-400" />
             <h2 className="text-base font-medium text-zinc-100">Codex CLI</h2>
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 rounded-full text-zinc-400 hover:text-white hover:bg-white/10">
+          <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close settings" className="h-8 w-8 rounded-full text-zinc-400 hover:text-white hover:bg-white/10">
             <X className="w-4 h-4" />
           </Button>
         </div>

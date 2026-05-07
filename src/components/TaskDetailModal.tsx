@@ -13,7 +13,6 @@ interface TaskDetailModalProps {
 export function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editTitleValue, setEditTitleValue] = useState(task.title);
-  const [deleteArmed, setDeleteArmed] = useState(false);
 
   const handleApprove = async () => {
     await updateTaskStatus(task.id, 'Completed');
@@ -31,10 +30,6 @@ export function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
   };
 
   const handleDelete = async () => {
-    if (!deleteArmed) {
-      setDeleteArmed(true);
-      return;
-    }
     await deleteTask(task.id);
     onClose();
   };
@@ -76,7 +71,7 @@ export function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
                    {task.status}
                  </span>
                </div>
-               <Button onClick={handleDelete} variant="ghost" size="icon" title={deleteArmed ? 'Confirm delete task' : 'Delete task'} className={`h-6 w-6 ${deleteArmed ? 'text-red-400 bg-red-500/10' : 'text-zinc-500 hover:text-red-400'}`}>
+               <Button onClick={handleDelete} variant="ghost" size="icon" title="Delete task" aria-label={`Delete task ${task.title}`} className="h-6 w-6 text-zinc-500 hover:text-red-400">
                  <Trash2 className="w-3.5 h-3.5" />
                </Button>
             </div>

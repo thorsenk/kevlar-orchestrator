@@ -99,7 +99,7 @@ export function TeamsWorkspace() {
             <Users className="w-4 h-4 text-zinc-400" />
             Agent Teams
           </h2>
-          <Button onClick={handleNewTeam} variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-white hover:bg-white/5">
+          <Button onClick={handleNewTeam} variant="ghost" size="icon" aria-label="Create team" className="h-8 w-8 text-zinc-400 hover:text-white hover:bg-white/5">
             <Plus className="w-4 h-4" />
           </Button>
         </div>
@@ -245,7 +245,7 @@ export function TeamsWorkspace() {
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-zinc-500 hover:text-zinc-300 shrink-0">
+                          <Button variant="ghost" size="icon" aria-label={`Open member actions for ${member.name}`} className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-zinc-500 hover:text-zinc-300 shrink-0">
                             <MoreVertical className="w-4 h-4" />
                           </Button>
                         </DropdownMenuTrigger>

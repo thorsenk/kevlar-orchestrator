@@ -134,7 +134,7 @@ export function SidebarRight({
 
         <div className="flex items-center justify-between gap-2 mb-4">
           <div className="flex items-center gap-1 bg-black/20 p-1 rounded-xl border border-white/[0.04] shadow-[inset_0_1px_4px_rgba(0,0,0,0.4)]">
-             <Button onClick={handleRunSideCar} disabled={!activeChatId || isRunning} variant="ghost" size="icon" className="h-7 w-7 text-white/70 hover:bg-white/[0.1] hover:text-white rounded-lg transition-all mix-blend-plus-lighter disabled:opacity-40" title="Run Side-Car">
+             <Button onClick={handleRunSideCar} disabled={!activeChatId || isRunning} variant="ghost" size="icon" aria-label="Run Side-Car" className="h-7 w-7 text-white/70 hover:bg-white/[0.1] hover:text-white rounded-lg transition-all mix-blend-plus-lighter disabled:opacity-40" title="Run Side-Car">
                <Play className="w-3.5 h-3.5" fill="currentColor" />
              </Button>
           </div>
@@ -267,6 +267,7 @@ function StreamCard({
           disabled={promoted}
           variant="ghost"
           size="sm"
+          aria-label={promoted ? `Side-Car card already promoted ${title}` : `Promote Side-Car card ${title}`}
           className="h-7 px-2 text-[11px] text-white/55 hover:text-white hover:bg-white/10 shrink-0 disabled:opacity-40"
         >
           {promoted ? 'Promoted' : 'Promote'}

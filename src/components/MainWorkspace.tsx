@@ -331,11 +331,25 @@ export function MainWorkspace({ currentView, setCurrentView, activeChatId, setAc
                 
                 <div className="flex items-center gap-1">
                   {runIsActive ? (
-                    <Button onClick={handleInterrupt} disabled={runStatus === 'cancelling'} size="icon" className="h-8 w-8 rounded-full bg-rose-500/90 text-white hover:bg-rose-400 ml-1 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed" title="Stop Codex run">
+                    <Button
+                      onClick={handleInterrupt}
+                      disabled={runStatus === 'cancelling'}
+                      size="icon"
+                      aria-label="Stop Codex run"
+                      className="h-8 w-8 rounded-full bg-rose-500/90 text-white hover:bg-rose-400 ml-1 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                      title="Stop Codex run"
+                    >
                       {runStatus === 'cancelling' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Square className="w-4 h-4 fill-current" />}
                     </Button>
                   ) : (
-                    <Button onClick={handleSendMessage} disabled={!canSend} size="icon" className="h-8 w-8 rounded-full bg-zinc-100 text-black hover:bg-white ml-1 shadow-sm transition-transform hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed">
+                    <Button
+                      onClick={handleSendMessage}
+                      disabled={!canSend}
+                      size="icon"
+                      aria-label="Send message to Codex"
+                      title="Send message to Codex"
+                      className="h-8 w-8 rounded-full bg-zinc-100 text-black hover:bg-white ml-1 shadow-sm transition-transform hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
                       <ArrowUp className="w-4 h-4 stroke-[2.5]" />
                     </Button>
                   )}
@@ -434,7 +448,14 @@ export function MainWorkspace({ currentView, setCurrentView, activeChatId, setAc
               <Button variant="ghost" size="sm" className="h-8 text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800 font-normal px-2">
                 Codex gpt-5.2 <ChevronDown className="w-3.5 h-3.5 opacity-60 ml-1" />
               </Button>
-              <Button onClick={handleSendMessage} disabled={!canSend} size="icon" className="h-8 w-8 rounded-full bg-zinc-100 text-black hover:bg-white ml-1 shadow-sm transition-transform hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed">
+              <Button
+                onClick={handleSendMessage}
+                disabled={!canSend}
+                size="icon"
+                aria-label="Send message to Codex"
+                title="Send message to Codex"
+                className="h-8 w-8 rounded-full bg-zinc-100 text-black hover:bg-white ml-1 shadow-sm transition-transform hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
                 <ArrowUp className="w-4 h-4 stroke-[2.5]" />
               </Button>
             </div>

@@ -19,7 +19,8 @@
     "pretest": "npm run rebuild:native:node",
     "test": "vitest",
     "pretest:run": "npm run rebuild:native:node",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "smoke:electron": "npm run rebuild:native:electron && npm run package && node script/electron_smoke.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
@@ -50,9 +51,10 @@
     "@electron/fuses": "^1.8.0",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22.14.0",
-    "electron": "^33.2.0",
     "autoprefixer": "^10.4.21",
+    "electron": "^33.2.0",
     "jsdom": "^25.0.1",
+    "playwright": "^1.59.1",
     "tailwindcss": "^4.1.14",
     "typescript": "~5.8.2",
     "vite": "^6.2.3",

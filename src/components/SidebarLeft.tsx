@@ -191,7 +191,6 @@ function NavItem({ icon, label, active, onClick }: { icon: React.ReactNode, labe
 function ProjectItem({ label, time, active, isSub, onClick, onRename, onDelete }: { label: string, time?: string, active?: boolean, isSub?: boolean, onClick?: () => void, onRename?: (name: string) => void, onDelete?: () => void, key?: React.Key }) {
   const [isEditing, setIsEditing] = React.useState(false);
   const [editValue, setEditValue] = React.useState(label);
-  const [deleteArmed, setDeleteArmed] = React.useState(false);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -235,22 +234,22 @@ function ProjectItem({ label, time, active, isSub, onClick, onRename, onDelete }
       {!isEditing && (
         <div className="flex items-center gap-1 shrink-0 ml-2">
           {onRename && (
-            <SquarePen 
+            <SquarePen
+              role="button"
+              aria-label={`Rename project ${label}`}
               onClick={(e) => { e.stopPropagation(); setIsEditing(true); setEditValue(label); }}
               className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 hover:text-zinc-200 text-zinc-400 block"
             />
           )}
           {onDelete && (
-            <Trash2 
+            <Trash2
+              role="button"
+              aria-label={`Delete project ${label}`}
               onClick={(e) => { 
                 e.stopPropagation(); 
-                if (deleteArmed) {
-                  onDelete();
-                } else {
-                  setDeleteArmed(true);
-                }
+                onDelete();
               }}
-              className={`w-3.5 h-3.5 group-hover:opacity-100 hover:text-red-400 block ml-0.5 ${deleteArmed ? 'opacity-100 text-red-400' : 'opacity-0 text-zinc-400'}`}
+              className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 hover:text-red-400 text-zinc-400 block ml-0.5"
             />
           )}
           {time && <span className="text-[10px] text-zinc-600">{time}</span>}
@@ -264,7 +263,6 @@ function ProjectItem({ label, time, active, isSub, onClick, onRename, onDelete }
 function ChatItem({ label, time, active, onClick, onRename, onDelete }: { label: string, time?: string, active?: boolean, onClick?: () => void, onRename?: (name: string) => void, onDelete?: () => void, key?: React.Key }) {
   const [isEditing, setIsEditing] = React.useState(false);
   const [editValue, setEditValue] = React.useState(label);
-  const [deleteArmed, setDeleteArmed] = React.useState(false);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -303,22 +301,22 @@ function ChatItem({ label, time, active, onClick, onRename, onDelete }: { label:
       {!isEditing && (
         <div className="flex items-center gap-1 shrink-0 ml-2">
           {onRename && (
-            <SquarePen 
+            <SquarePen
+              role="button"
+              aria-label={`Rename chat ${label}`}
               onClick={(e) => { e.stopPropagation(); setIsEditing(true); setEditValue(label); }}
               className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 hover:text-zinc-200 text-zinc-400"
             />
           )}
           {onDelete && (
-            <Trash2 
+            <Trash2
+              role="button"
+              aria-label={`Delete chat ${label}`}
               onClick={(e) => { 
                 e.stopPropagation(); 
-                if (deleteArmed) {
-                  onDelete();
-                } else {
-                  setDeleteArmed(true);
-                }
+                onDelete();
               }}
-              className={`w-3.5 h-3.5 group-hover:opacity-100 hover:text-red-400 ml-0.5 block ${deleteArmed ? 'opacity-100 text-red-400' : 'opacity-0 text-zinc-400'}`}
+              className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 hover:text-red-400 text-zinc-400 ml-0.5 block"
             />
           )}
           {active ? (
